@@ -1,4 +1,4 @@
-import type { ApiResponse } from "./types/api-responses"
+import type { ApiResponse, HouseholdMember } from "./types/api-responses"
 import type {
   LoginResponse,
   TenantDetailsResponse,
@@ -16,6 +16,9 @@ import type {
   EmergencyContactRequest,
   CreateWorkOrderRequest,
   UpdateUserDocumentRequest,
+  UpdateProfileRequest,
+  CreateHouseholdMemberRequest,
+  UpdateHouseholdMemberRequest,
 } from "./types/api-requests"
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080"
@@ -160,6 +163,14 @@ class ApiClient {
   async getWorkOrders() {
     return this.request<WorkOrderResponse[]>("/work-orders")
   }
+
+   async updateTenantProfile(data: UpdateProfileRequest): Promise<ApiResponse<TenantDetailsResponse>> {
+    return this.request<TenantDetailsResponse>("/tenants/self", {
+      method: "PUT",
+      body: JSON.stringify(data),
+    })
+  }
+
 
   async createWorkOrder(request: CreateWorkOrderRequest) {
     return this.request<{ workOrderId: string }>("/work-orders", {

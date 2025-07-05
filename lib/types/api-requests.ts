@@ -88,3 +88,15 @@ export interface FileUploadRequest {
   fileCategory: string
   imageOwner: string
 }
+// Profile Update Request Types
+export interface UpdateProfileRequest {
+  firstName?: string
+  lastName?: string
+  primaryEmail?: string
+  primaryMobile?: string
+  emiratesIdNo?: string
+  emiratesIdExpiry?: string
+  nationality?: string
+  documentPath ?: string
+  profileImage ?: string
+}

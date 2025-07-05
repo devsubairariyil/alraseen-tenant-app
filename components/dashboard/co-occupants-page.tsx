@@ -7,10 +7,20 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import {
   Users,
   Plus,
@@ -29,6 +39,8 @@ import {
   Mail,
   Phone,
   Clock,
+  Eye,
+  Download,
 } from "lucide-react"
 import { apiClient } from "@/lib/api"
 import type { LeaseDetailsResponse, HouseholdMember } from "@/lib/types/api-responses"
@@ -95,6 +107,13 @@ const getStatusConfig = (status: string) => {
   }
 }
 
+// Helper function to determine file type
+const getFileType = (url: string): "pdf" | "image" | "unknown" => {
+  if (url.match(/\.pdf(\?.*)?$/i)) return "pdf"
+  if (url.match(/\.(jpg|jpeg|png|gif|webp)(\?.*)?$/i)) return "image"
+  return "unknown"
+}
+
 export default function CoOccupantsPage() {
   const [leases, setLeases] = useState<LeaseDetailsResponse[]>([])
   const [loading, setLoading] = useState(true)
@@ -104,6 +123,32 @@ export default function CoOccupantsPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [editingMember, setEditingMember] = useState<HouseholdMember | null>(null)
   const [uploadingEmiratesId, setUploadingEmiratesId] = useState<string | null>(null)
+
+  // Confirmation dialog state
+  const [confirmationDialog, setConfirmationDialog] = useState<{
+    isOpen: boolean
+    member: HouseholdMember | null
+    isProcessing: boolean
+  }>({
+    isOpen: false,
+    member: null,
+    isProcessing: false,
+  })
+
+  // Document preview state
+  const [documentPreview, setDocumentPreview] = useState<{
+    isOpen: boolean
+    url: string
+    type: "pdf" | "image" | "unknown"
+    memberName: string
+    imageError: boolean
+  }>({
+    isOpen: false,
+    url: "",
+    type: "unknown",
+    memberName: "",
+    imageError: false,
+  })
 
   // Form state
   const [formData, setFormData] = useState<CreateHouseholdMemberRequest>({
@@ -200,16 +245,29 @@ export default function CoOccupantsPage() {
     }
   }
 
-  const handleMarkAsLeft = async (memberId: string) => {
+  const handleMarkAsLeftClick = (member: HouseholdMember) => {
+    setConfirmationDialog({
+      isOpen: true,
+      member,
+      isProcessing: false,
+    })
+  }
+
+  const handleConfirmMarkAsLeft = async () => {
+    if (!confirmationDialog.member) return
+
     try {
+      setConfirmationDialog((prev) => ({ ...prev, isProcessing: true }))
       const today = new Date().toISOString().split("T")[0]
-      await apiClient.updateHouseholdMember(memberId, {
+      await apiClient.updateHouseholdMember(confirmationDialog.member.memberId, {
         status: "LEFT",
         leavingDate: today,
       })
       await fetchData()
+      setConfirmationDialog({ isOpen: false, member: null, isProcessing: false })
     } catch (err) {
       console.error("Error marking member as left:", err)
+      setConfirmationDialog((prev) => ({ ...prev, isProcessing: false }))
     }
   }
 
@@ -226,6 +284,32 @@ export default function CoOccupantsPage() {
       joiningDate: member.joiningDate,
     })
     setIsEditDialogOpen(true)
+  }
+
+  const handleViewDocument = (documentUrl: string, memberName: string) => {
+    const fileType = getFileType(documentUrl)
+    console.log(fileType)
+    setDocumentPreview({
+      isOpen: true,
+      url: documentUrl,
+      type: fileType,
+      memberName,
+      imageError: false,
+    })
+  }
+
+  const handleImageError = () => {
+    setDocumentPreview((prev) => ({ ...prev, imageError: true }))
+  }
+
+  const handleDownloadDocument = (url: string, memberName: string) => {
+    const link = document.createElement("a")
+    link.href = url
+    link.download = `Emirates_ID_${memberName.replace(/\s+/g, "_")}`
+    link.target = "_blank"
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
   }
 
   const handleEmiratesIdUpload = async (event: React.ChangeEvent<HTMLInputElement>, memberId?: string) => {
@@ -607,7 +691,7 @@ export default function CoOccupantsPage() {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => handleMarkAsLeft(member.memberId)}
+                          onClick={() => handleMarkAsLeftClick(member)}
                           className="text-orange-600 hover:text-orange-700"
                         >
                           <UserX className="w-3 h-3" />
@@ -664,16 +748,28 @@ export default function CoOccupantsPage() {
                     <div className="mt-3 pt-3 border-t border-gray-100">
                       <div className="flex items-center justify-between">
                         <span className="text-sm text-gray-600">Emirates ID Document:</span>
-                        <div className="flex gap-2">
+                        <div className="flex gap-1">
                           {member.documentPath ? (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => window.open(member.documentPath, "_blank")}
-                            >
-                              <FileText className="w-3 h-3 mr-1" />
-                              View
-                            </Button>
+                            <>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleViewDocument(member.documentPath, member.name)}
+                                className="text-xs px-2 py-1 h-7"
+                              >
+                                <Eye className="w-3 h-3 mr-1" />
+                                Preview
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleDownloadDocument(member.documentPath, member.name)}
+                                className="text-xs px-2 py-1 h-7"
+                              >
+                                <Download className="w-3 h-3 mr-1" />
+                                Download
+                              </Button>
+                            </>
                           ) : null}
                           <div className="relative">
                             <input
@@ -686,7 +782,7 @@ export default function CoOccupantsPage() {
                             />
                             <label
                               htmlFor={`emirates-id-upload-${member.memberId}`}
-                              className="inline-flex items-center px-2 py-1 text-xs border border-gray-300 rounded cursor-pointer hover:bg-gray-50"
+                              className="inline-flex items-center px-2 py-1 text-xs border border-gray-300 rounded cursor-pointer hover:bg-gray-50 h-7"
                             >
                               {uploadingEmiratesId === member.memberId ? (
                                 <div className="w-3 h-3 border border-gray-400 border-t-transparent rounded-full animate-spin mr-1" />
@@ -783,6 +879,34 @@ export default function CoOccupantsPage() {
                         </div>
                       )}
                     </div>
+
+                    {member.documentPath && (
+                      <div className="mt-3 pt-3 border-t border-gray-100">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-gray-600">Emirates ID Document:</span>
+                          <div className="flex gap-1">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleViewDocument(member.documentPath, member.name)}
+                              className="text-xs px-2 py-1 h-7"
+                            >
+                              <Eye className="w-3 h-3 mr-1" />
+                              Preview
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleDownloadDocument(member.documentPath, member.name)}
+                              className="text-xs px-2 py-1 h-7"
+                            >
+                              <Download className="w-3 h-3 mr-1" />
+                              Download
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )
               })}
@@ -869,6 +993,34 @@ export default function CoOccupantsPage() {
                         </div>
                       )}
                     </div>
+
+                    {member.documentPath && (
+                      <div className="mt-3 pt-3 border-t border-gray-100">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-gray-600">Emirates ID Document:</span>
+                          <div className="flex gap-1">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleViewDocument(member.documentPath, member.name)}
+                              className="text-xs px-2 py-1 h-7"
+                            >
+                              <Eye className="w-3 h-3 mr-1" />
+                              Preview
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleDownloadDocument(member.documentPath, member.name)}
+                              className="text-xs px-2 py-1 h-7"
+                            >
+                              <Download className="w-3 h-3 mr-1" />
+                              Download
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )
               })}
@@ -997,6 +1149,111 @@ export default function CoOccupantsPage() {
               </Button>
             </div>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Confirmation Dialog for Mark as Left */}
+      <AlertDialog
+        open={confirmationDialog.isOpen}
+        onOpenChange={(open) =>
+          !confirmationDialog.isProcessing && setConfirmationDialog((prev) => ({ ...prev, isOpen: open }))
+        }
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Mark Member as Left</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to mark <strong>{confirmationDialog.member?.name}</strong> as left? This will set
+              their status to "LEFT" and record today's date as their leaving date. This action can be reversed by
+              editing the member later.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={confirmationDialog.isProcessing}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmMarkAsLeft}
+              disabled={confirmationDialog.isProcessing}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {confirmationDialog.isProcessing ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                  Processing...
+                </>
+              ) : (
+                "Mark as Left"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Document Preview Dialog */}
+      <Dialog
+        open={documentPreview.isOpen}
+        onOpenChange={(open) => setDocumentPreview((prev) => ({ ...prev, isOpen: open }))}
+      >
+        <DialogContent className="max-w-4xl max-h-[90vh] p-0">
+          <DialogHeader className="p-6 pb-4">
+            <DialogTitle>Emirates ID Document - {documentPreview.memberName}</DialogTitle>
+          </DialogHeader>
+          <div className="px-6 pb-6">
+            {documentPreview.type === "pdf" ? (
+              <div className="w-full h-[70vh] border rounded-lg overflow-hidden bg-gray-100">
+                <iframe
+                  src={documentPreview.url}
+                  className="w-full h-full"
+                  title={`Emirates ID - ${documentPreview.memberName}`}
+                />
+              </div>
+            ) : documentPreview.type === "image" ? (
+              <div className="flex justify-center bg-gray-50 rounded-lg p-4">
+                {documentPreview.imageError ? (
+                  <div className="text-center py-12">
+                    <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Image Load Error</h3>
+                    <p className="text-gray-600 mb-4">Unable to load the image. It may be corrupted or inaccessible.</p>
+                    <Button onClick={() => window.open(documentPreview.url, "_blank")} variant="outline">
+                      <FileText className="w-4 h-4 mr-2" />
+                      Open in New Tab
+                    </Button>
+                  </div>
+                ) : (
+                  <img
+                    src={encodeURI(documentPreview.url)}
+                    alt={`Emirates ID - ${documentPreview.memberName}`}
+                    className="max-w-full max-h-[70vh] object-contain rounded-lg shadow-lg"
+                    onError={handleImageError}
+                    crossOrigin="anonymous"
+                  />
+                )}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Preview Not Available</h3>
+                <p className="text-gray-600 mb-4">This file type cannot be previewed in the browser.</p>
+                <Button onClick={() => window.open(documentPreview.url, "_blank")} variant="outline">
+                  <FileText className="w-4 h-4 mr-2" />
+                  Open in New Tab
+                </Button>
+              </div>
+            )}
+          </div>
+          <DialogFooter className="px-6 pb-6">
+            <Button
+              onClick={() => handleDownloadDocument(documentPreview.url, documentPreview.memberName)}
+              variant="outline"
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Download
+            </Button>
+            <Button onClick={() => window.open(documentPreview.url, "_blank")} variant="outline">
+              <FileText className="w-4 h-4 mr-2" />
+              Open in New Tab
+            </Button>
+            <Button onClick={() => setDocumentPreview((prev) => ({ ...prev, isOpen: false }))}>Close</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

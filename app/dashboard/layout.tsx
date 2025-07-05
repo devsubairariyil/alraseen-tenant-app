@@ -154,30 +154,7 @@ export default function DashboardLayout({
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 md:gap-3">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="rounded-full hover:bg-gray-100 h-8 w-8 md:h-10 md:w-10"
-                  >
-                    <Search className="w-3 h-3 md:w-4 md:h-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="rounded-full hover:bg-gray-100 relative h-8 w-8 md:h-10 md:w-10"
-                  >
-                    <Bell className="w-3 h-3 md:w-4 md:h-4" />
-                    <div className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full"></div>
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="rounded-full hover:bg-gray-100 h-8 w-8 md:h-10 md:w-10"
-                  >
-                    <Settings className="w-3 h-3 md:w-4 md:h-4" />
-                  </Button>
-                </div>
+                
               </div>
             </header>
 

@@ -166,3 +166,18 @@ export interface FileUploadResponse {
   status: string
   data: string // This is the reference ID for the uploaded image
 }
+// Tenant Details Response Type
+export interface TenantDetailsResponse {
+  tenantId: string
+  firstName: string
+  lastName: string
+  primaryEmail: string
+  primaryMobile: string
+  emiratesIdNo: string
+  emiratesIdExpiry: string
+  nationality: string
+  profileImage?: string
+  emiratesIdDocument?: string
+  createdAt: string
+  updatedAt: string
+}

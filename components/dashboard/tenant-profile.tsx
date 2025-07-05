@@ -25,56 +25,40 @@ import {
   Plus,
   Edit,
   Trash2,
+  Eye,
+  Download,
 } from "lucide-react"
 import { apiClient } from "@/lib/api"
-
-interface TenantData {
-  tenantId: string
-  firstName: string
-  lastName: string
-  primaryEmail: string
-  primaryMobile: string
-  emiratesIdNo: string
-  emiratesIdExpiry: string
-  nationality: string
-  profileImage?: string
-  emergencyContacts: Array<{
-    contactId: string
-    name: string
-    relationship: string
-    mobile: string
-    email: string
-  }>
-  houseHoldMembers: Array<{
-    memberId: string
-    name: string
-    relationship: string
-    emiratesIdNo: string
-    emiratesIdExpiry: string
-    nationality: string
-  }>
-}
-
-interface EmergencyContact {
-  contactId?: string
-  name: string
-  relationship: string
-  mobile: string
-  email: string
-}
+import type { TenantDetailsResponse, EmergencyContact } from "@/lib/types/api-responses"
+import type { EmergencyContactRequest } from "@/lib/types/api-requests"
+import EditProfileModal from "./edit-profile-modal"
 
 export default function TenantProfile() {
-  const [tenantData, setTenantData] = useState<TenantData | null>(null)
+  const [tenantData, setTenantData] = useState<TenantDetailsResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
   const [isUploadingImage, setIsUploadingImage] = useState(false)
   const [isEmergencyDialogOpen, setIsEmergencyDialogOpen] = useState(false)
+  const [isEditProfileOpen, setIsEditProfileOpen] = useState(false)
   const [editingContact, setEditingContact] = useState<EmergencyContact | null>(null)
-  const [emergencyForm, setEmergencyForm] = useState<EmergencyContact>({
+  const [emergencyForm, setEmergencyForm] = useState<EmergencyContactRequest>({
     name: "",
     relationship: "",
     mobile: "",
     email: "",
+  })
+
+  // Document Preview State
+  const [documentPreview, setDocumentPreview] = useState<{
+    isOpen: boolean
+    url: string
+    type: "pdf" | "image" | "unknown"
+    imageError: boolean
+  }>({
+    isOpen: false,
+    url: "",
+    type: "unknown",
+    imageError: false,
   })
 
   useEffect(() => {
@@ -101,14 +85,14 @@ export default function TenantProfile() {
       setIsUploadingImage(true)
 
       // Upload file first
-      const uploadResponse = await apiClient.uploadFile(file, "PROFILE_IMAGE")
-      const referenceId = uploadResponse.referenceId || uploadResponse.fileId
+      const uploadResponse = await apiClient.uploadFile(file, "PROFILE_PICTURE")
+      const referenceId = uploadResponse.data
 
       if (referenceId) {
         // Update profile with the reference ID
         await apiClient.updateUserDocument({
-          documentType: "PROFILE_IMAGE",
-          referenceId: referenceId,
+          type: "PROFILE_PICTURE",
+          documentReference: referenceId,
         })
 
         // Refresh tenant data
@@ -146,7 +130,12 @@ export default function TenantProfile() {
 
   const handleEditContact = (contact: EmergencyContact) => {
     setEditingContact(contact)
-    setEmergencyForm(contact)
+    setEmergencyForm({
+      name: contact.name,
+      relationship: contact.relationship,
+      mobile: contact.mobile,
+      email: contact.email,
+    })
     setIsEmergencyDialogOpen(true)
   }
 
@@ -157,6 +146,37 @@ export default function TenantProfile() {
     } catch (err) {
       console.error("Error deleting emergency contact:", err)
     }
+  }
+
+  const getFileType = (url: string): "pdf" | "image" | "unknown" => {
+    const extension = url.split(".").pop()?.toLowerCase()
+    if (extension === "pdf") return "pdf"
+    if (["jpg", "jpeg", "png", "gif", "webp"].includes(extension || "")) return "image"
+    return "unknown"
+  }
+
+  const handleViewDocument = (url: string) => {
+    const fileType = getFileType(url)
+    setDocumentPreview({
+      isOpen: true,
+      url,
+      type: fileType,
+      imageError: false,
+    })
+  }
+
+  const handleDownloadDocument = (url: string) => {
+    const link = document.createElement("a")
+    link.href = url
+    link.download = `Emirates_ID_${tenantData?.firstName}_${tenantData?.lastName}`
+    link.target = "_blank"
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
+  const handleImageError = () => {
+    setDocumentPreview((prev) => ({ ...prev, imageError: true }))
   }
 
   const isIdExpiringSoon = (expiryDate: string) => {
@@ -171,6 +191,16 @@ export default function TenantProfile() {
     const expiry = new Date(expiryDate)
     const today = new Date()
     return expiry < today
+  }
+
+  const getIdStatus = (expiryDate: string) => {
+    if (isIdExpired(expiryDate)) {
+      return { status: "Expired", color: "bg-red-100 text-red-800", icon: AlertCircle }
+    } else if (isIdExpiringSoon(expiryDate)) {
+      return { status: "Expiring Soon", color: "bg-yellow-100 text-yellow-800", icon: AlertCircle }
+    } else {
+      return { status: "Valid", color: "bg-green-100 text-green-800", icon: CheckCircle }
+    }
   }
 
   if (loading) {
@@ -198,16 +228,6 @@ export default function TenantProfile() {
         </CardContent>
       </Card>
     )
-  }
-
-  const getIdStatus = (expiryDate: string) => {
-    if (isIdExpired(expiryDate)) {
-      return { status: "Expired", color: "bg-red-100 text-red-800", icon: AlertCircle }
-    } else if (isIdExpiringSoon(expiryDate)) {
-      return { status: "Expiring Soon", color: "bg-yellow-100 text-yellow-800", icon: AlertCircle }
-    } else {
-      return { status: "Valid", color: "bg-green-100 text-green-800", icon: CheckCircle }
-    }
   }
 
   const idStatus = getIdStatus(tenantData.emiratesIdExpiry)
@@ -272,6 +292,7 @@ export default function TenantProfile() {
             <Button
               variant="secondary"
               className="bg-white/20 text-white border-white/30 hover:bg-white/30 flex-shrink-0"
+              onClick={() => setIsEditProfileOpen(true)}
             >
               <Edit className="w-4 h-4 mr-2" />
               Edit Profile
@@ -361,6 +382,38 @@ export default function TenantProfile() {
                 </div>
               </div>
             </div>
+
+            {/* Emirates ID Document Actions */}
+            {tenantData.emiratesIdDocument && (
+              <div className="border-t pt-4">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-sm font-medium text-gray-500">Emirates ID Document</p>
+                  <div className="flex gap-1">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleViewDocument(apiClient.getFileUrl(tenantData.emiratesIdDocument!))}
+                      className="text-xs px-2 py-1 h-7"
+                    >
+                      <Eye className="w-3 h-3 mr-1" />
+                      Preview
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleDownloadDocument(apiClient.getFileUrl(tenantData.emiratesIdDocument!))}
+                      className="text-xs px-2 py-1 h-7"
+                    >
+                      <Download className="w-3 h-3 mr-1" />
+                      Download
+                    </Button>
+                  </div>
+                </div>
+                <p className="text-xs text-gray-500">
+                  Last updated: {new Date(tenantData.updatedAt).toLocaleDateString()}
+                </p>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -507,6 +560,73 @@ export default function TenantProfile() {
           </Card>
         )}
       </div>
+
+      {/* Edit Profile Modal */}
+      {tenantData && (
+        <EditProfileModal
+          isOpen={isEditProfileOpen}
+          onClose={() => setIsEditProfileOpen(false)}
+          tenantData={tenantData}
+          onUpdate={fetchTenantData}
+        />
+      )}
+
+      {/* Document Preview Dialog */}
+      <Dialog
+        open={documentPreview.isOpen}
+        onOpenChange={() => setDocumentPreview((prev) => ({ ...prev, isOpen: false }))}
+      >
+        <DialogContent className="max-w-4xl max-h-[90vh] p-0">
+          <DialogHeader className="p-6 pb-4">
+            <DialogTitle>Emirates ID Document Preview</DialogTitle>
+          </DialogHeader>
+
+          <div className="flex-1 p-6 pt-0">
+            <div className="bg-gray-50 rounded-lg p-4 h-[60vh] flex items-center justify-center">
+              {documentPreview.type === "pdf" ? (
+                <iframe src={documentPreview.url} className="w-full h-full rounded border" title="Document Preview" />
+              ) : documentPreview.type === "image" ? (
+                documentPreview.imageError ? (
+                  <div className="text-center">
+                    <AlertCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-600 mb-4">Unable to load image preview</p>
+                    <Button variant="outline" onClick={() => window.open(documentPreview.url, "_blank")}>
+                      Open in New Tab
+                    </Button>
+                  </div>
+                ) : (
+                  <img
+                    src={documentPreview.url || "/placeholder.svg"}
+                    alt="Document Preview"
+                    className="max-w-full max-h-full object-contain rounded"
+                    crossOrigin="anonymous"
+                    onError={handleImageError}
+                  />
+                )
+              ) : (
+                <div className="text-center">
+                  <AlertCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-600 mb-4">Preview not available for this file type</p>
+                  <Button variant="outline" onClick={() => window.open(documentPreview.url, "_blank")}>
+                    Open in New Tab
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 p-6 pt-0">
+            <Button variant="outline" onClick={() => handleDownloadDocument(documentPreview.url)}>
+              <Download className="w-4 h-4 mr-2" />
+              Download
+            </Button>
+            <Button variant="outline" onClick={() => window.open(documentPreview.url, "_blank")}>
+              Open in New Tab
+            </Button>
+            <Button onClick={() => setDocumentPreview((prev) => ({ ...prev, isOpen: false }))}>Close</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

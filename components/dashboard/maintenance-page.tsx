@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { ImageViewer } from "@/components/ui/image-viewer"
 import {
   Wrench,
   Plus,
@@ -28,37 +29,13 @@ import {
   Droplets,
   Thermometer,
   Wifi,
+  Eye,
+  XCircle,
 } from "lucide-react"
 import { apiClient } from "@/lib/api"
 import { formatDate } from "@/lib/utils"
 import { useAuth } from "@/lib/auth-context"
-
-interface WorkOrderData {
-  workOrderId: string
-  title: string
-  requestedByUserId: string
-  requesterType: string
-  propertyId: string
-  unitId: string
-  category: string
-  subcategory: string
-  description: string
-  workOrderStatus: string
-  priority: string
-  assignedToUserId: string
-  requiresLandlordApproval: boolean
-  landlordApprovalStatus: string
-  approvedByLandlordId: string
-  landlordRemarks: string
-  beforeImages: string[]
-  afterImages: string[]
-  remarks: string
-  createdAt: string
-  updatedAt: string
-  propertyName?: string
-  flatNumber?: string
-  assignedToName?: string
-}
+import type { WorkOrderResponse, LeaseDetailsResponse } from "@/lib/types/api-responses"
 
 const categories = [
   { value: "HVAC", label: "HVAC", icon: Thermometer },
@@ -76,28 +53,70 @@ const priorities = [
 ]
 
 export default function MaintenancePage() {
-  const [workOrders, setWorkOrders] = useState<WorkOrderData[]>([])
+  const [workOrders, setWorkOrders] = useState<WorkOrderResponse[]>([])
+  const [leases, setLeases] = useState<LeaseDetailsResponse[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [uploadedImages, setUploadedImages] = useState<string[]>([])
+  const [cancellingWorkOrder, setCancellingWorkOrder] = useState<string | null>(null)
+
+  // Image viewer state
+  const [imageViewerOpen, setImageViewerOpen] = useState(false)
+  const [viewingImages, setViewingImages] = useState<string[]>([])
+  const [imageViewerTitle, setImageViewerTitle] = useState("")
+
   const { user } = useAuth()
 
   // Form state
   const [formData, setFormData] = useState({
     title: "",
+    propertyId: "",
+    unitId: "",
     category: "",
     subcategory: "",
     description: "",
     priority: "MEDIUM",
-    requiresLandlordApproval: false,
     remarks: "",
   })
 
   useEffect(() => {
-    fetchWorkOrders()
+    fetchData()
   }, [])
+
+  const fetchData = async () => {
+    try {
+      setLoading(true)
+      setError("")
+
+      // Fetch both work orders and leases
+      const [workOrdersResponse, leasesResponse] = await Promise.all([
+        apiClient.getWorkOrders(),
+        apiClient.getMyLeases(),
+      ])
+
+      setWorkOrders(workOrdersResponse.data || [])
+      setLeases(leasesResponse.data || [])
+
+      // Set default property/unit if there's an active lease
+      const activeLeases = leasesResponse.data?.filter((lease) => lease.rentalAgreement.leaseStatus === "ACTIVE") || []
+
+      if (activeLeases.length > 0) {
+        console.log(activeLeases[0].rentalAgreement)
+        setFormData((prev) => ({
+          ...prev,
+          propertyId: activeLeases[0].rentalAgreement.propertyId || "",
+          unitId: activeLeases[0].rentalAgreement.unitId || activeLeases[0].rentalAgreement.flatId || "",
+        }))
+      }
+    } catch (err) {
+      setError("Failed to load data")
+      console.error("Error fetching data:", err)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const fetchWorkOrders = async () => {
     try {
@@ -120,8 +139,8 @@ export default function MaintenancePage() {
     try {
       const uploadPromises = Array.from(files).map(async (file) => {
         try {
-          const response = await apiClient.uploadFile(file, "MAINTENANCE")
-          return response?.referenceId || response?.fileId || null
+          const response = await apiClient.uploadFile(file, "IMAGE")
+          return response?.data || null
         } catch (err) {
           console.error("Error uploading file:", file.name, err)
           return null
@@ -129,7 +148,7 @@ export default function MaintenancePage() {
       })
 
       const imageIds = await Promise.all(uploadPromises)
-      const validImageIds = imageIds.filter((id) => id !== null)
+      const validImageIds = imageIds.filter((id) => id !== null) as string[]
 
       if (validImageIds.length > 0) {
         setUploadedImages((prev) => [...(prev || []), ...validImageIds])
@@ -150,36 +169,43 @@ export default function MaintenancePage() {
       return
     }
 
+    if (!formData.propertyId || !formData.unitId) {
+      console.error("Property ID and Unit ID are required")
+      return
+    }
+
     try {
       setIsSubmitting(true)
 
       const workOrderData = {
         title: formData.title || "Untitled Request",
         requestedByUserId: user.userId,
-        requesterType: "TENANT",
-        propertyId: "placeholder-property-id",
-        unitId: "placeholder-unit-id",
+        requesterType: "TENANT" as const,
+        propertyId: formData.propertyId,
+        unitId: formData.unitId,
         category: formData.category || "GENERAL",
         subcategory: formData.subcategory || "",
         description: formData.description || "",
         workOrderStatus: "PENDING" as const,
         priority: formData.priority || "MEDIUM",
-        requiresLandlordApproval: formData.requiresLandlordApproval || false,
+        requiresLandlordApproval: false, // Always false for tenant requests
         landlordApprovalStatus: "PENDING" as const,
         beforeImages: uploadedImages || [],
         remarks: formData.remarks || "",
       }
 
+      console.log(workOrderData)
       await apiClient.createWorkOrder(workOrderData)
 
       // Reset form and close dialog
       setFormData({
         title: "",
+        propertyId: formData.propertyId, // Keep the property/unit selected
+        unitId: formData.unitId,
         category: "",
         subcategory: "",
         description: "",
         priority: "MEDIUM",
-        requiresLandlordApproval: false,
         remarks: "",
       })
       setUploadedImages([])
@@ -192,6 +218,26 @@ export default function MaintenancePage() {
     } finally {
       setIsSubmitting(false)
     }
+  }
+
+  const handleCancelWorkOrder = async (workOrderId: string) => {
+    try {
+      setCancellingWorkOrder(workOrderId)
+      await apiClient.cancelWorkOrder(workOrderId)
+
+      // Refresh work orders to show updated status
+      await fetchWorkOrders()
+    } catch (err) {
+      console.error("Error cancelling work order:", err)
+    } finally {
+      setCancellingWorkOrder(null)
+    }
+  }
+
+  const openImageViewer = (images: string[], title: string) => {
+    setViewingImages(images)
+    setImageViewerTitle(title)
+    setImageViewerOpen(true)
   }
 
   const getStatusColor = (status?: string) => {
@@ -222,7 +268,7 @@ export default function MaintenancePage() {
       case "PENDING":
         return <Clock className="w-4 h-4 text-yellow-500" />
       case "CANCELLED":
-        return <AlertTriangle className="w-4 h-4 text-red-500" />
+        return <XCircle className="w-4 h-4 text-red-500" />
       default:
         return <AlertTriangle className="w-4 h-4 text-gray-500" />
     }
@@ -265,6 +311,10 @@ export default function MaintenancePage() {
     }
   }
 
+  const getActiveLeases = () => {
+    return leases.filter((lease) => lease.rentalAgreement.leaseStatus === "ACTIVE")
+  }
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -283,6 +333,7 @@ export default function MaintenancePage() {
   }
 
   const summary = calculateSummary()
+  const activeLeases = getActiveLeases()
 
   return (
     <div className="space-y-6 md:space-y-8">
@@ -292,13 +343,16 @@ export default function MaintenancePage() {
           <p className="text-gray-600 text-sm md:text-base">Submit and track your property maintenance requests</p>
         </div>
         <div className="flex gap-2">
-          <Button onClick={fetchWorkOrders} variant="outline" size="sm">
+          <Button onClick={fetchData} variant="outline" size="sm">
             <RefreshCw className="w-4 h-4 mr-2" />
             Refresh
           </Button>
           <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
             <DialogTrigger asChild>
-              <Button className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600">
+              <Button
+                className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"
+                disabled={activeLeases.length === 0}
+              >
                 <Plus className="w-4 h-4 mr-2" />
                 New Request
               </Button>
@@ -308,6 +362,31 @@ export default function MaintenancePage() {
                 <DialogTitle>Create Maintenance Request</DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <Label htmlFor="property">Property</Label>
+                  <Select
+                    value={`${formData.propertyId}-${formData.unitId}`}
+                    onValueChange={(value) => {
+                      const [propertyId, unitId] = value.split("-")
+                      setFormData((prev) => ({ ...prev, propertyId, unitId }))
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select property" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {activeLeases.map((lease) => (
+                        <SelectItem
+                          key={lease.rentalAgreement.leaseId}
+                          value={`${lease.rentalAgreement.propertyId}-${lease.rentalAgreement.unitId || lease.rentalAgreement.flatId}`}
+                        >
+                          {lease.rentalAgreement.propertyName} - Unit {lease.rentalAgreement.flatNumber}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
                 <div>
                   <Label htmlFor="title">Title</Label>
                   <Input
@@ -432,16 +511,6 @@ export default function MaintenancePage() {
                   )}
                 </div>
 
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    id="landlordApproval"
-                    checked={formData.requiresLandlordApproval}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, requiresLandlordApproval: e.target.checked }))}
-                  />
-                  <Label htmlFor="landlordApproval">Requires landlord approval</Label>
-                </div>
-
                 <div className="flex justify-end gap-2 pt-4">
                   <Button type="button" variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
                     Cancel
@@ -455,6 +524,21 @@ export default function MaintenancePage() {
           </Dialog>
         </div>
       </div>
+
+      {/* Show message if no active leases */}
+      {activeLeases.length === 0 && (
+        <Card className="border-0 shadow-lg bg-yellow-50 rounded-2xl">
+          <CardContent className="p-6">
+            <div className="flex items-center gap-3">
+              <AlertTriangle className="w-6 h-6 text-yellow-600" />
+              <div>
+                <h3 className="font-semibold text-yellow-800">No Active Lease</h3>
+                <p className="text-yellow-700 text-sm">You need an active lease to create maintenance requests.</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
@@ -504,7 +588,7 @@ export default function MaintenancePage() {
               <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-4" />
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Error Loading Requests</h3>
               <p className="text-gray-600 mb-4">{error}</p>
-              <Button onClick={fetchWorkOrders} variant="outline">
+              <Button onClick={fetchData} variant="outline">
                 Try Again
               </Button>
             </div>
@@ -513,15 +597,22 @@ export default function MaintenancePage() {
               <Wrench className="w-12 h-12 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-semibold text-gray-900 mb-2">No Maintenance Requests</h3>
               <p className="text-gray-600 mb-4">You haven't submitted any maintenance requests yet.</p>
-              <Button onClick={() => setIsCreateDialogOpen(true)}>
-                <Plus className="w-4 h-4 mr-2" />
-                Create First Request
-              </Button>
+              {activeLeases.length > 0 && (
+                <Button onClick={() => setIsCreateDialogOpen(true)}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create First Request
+                </Button>
+              )}
             </div>
           ) : (
             <div className="space-y-4">
               {workOrders.map((workOrder) => {
                 if (!workOrder) return null
+
+                const hasBeforeImages = workOrder.beforeImages && workOrder.beforeImages.length > 0
+                const hasAfterImages = workOrder.afterImages && workOrder.afterImages.length > 0
+                const isPending = workOrder.workOrderStatus?.toUpperCase() === "PENDING"
+                const isCancelling = cancellingWorkOrder === workOrder.workOrderId
 
                 return (
                   <div
@@ -548,9 +639,8 @@ export default function MaintenancePage() {
                           <div className="flex flex-wrap gap-4 text-xs text-gray-500">
                             {workOrder.category && <span>Category: {workOrder.category}</span>}
                             {workOrder.subcategory && <span>• {workOrder.subcategory}</span>}
-                            {workOrder.beforeImages && workOrder.beforeImages.length > 0 && (
-                              <span>• {workOrder.beforeImages.length} image(s)</span>
-                            )}
+                            {hasBeforeImages && <span>• {workOrder.beforeImages.length} before image(s)</span>}
+                            {hasAfterImages && <span>• {workOrder.afterImages.length} after image(s)</span>}
                           </div>
                         </div>
                       </div>
@@ -617,24 +707,49 @@ export default function MaintenancePage() {
                     )}
 
                     <div className="flex flex-wrap gap-2">
-                      <Button variant="outline" size="sm">
-                        View Details
-                      </Button>
-                      {workOrder.beforeImages && workOrder.beforeImages.length > 0 && (
-                        <Button variant="outline" size="sm">
-                          View Images ({workOrder.beforeImages.length})
+                      {hasBeforeImages && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => openImageViewer(workOrder.beforeImages, "Before Images")}
+                        >
+                          <Eye className="w-4 h-4 mr-2" />
+                          Before Images ({workOrder.beforeImages.length})
                         </Button>
                       )}
-                      {workOrder.workOrderStatus &&
-                        !["COMPLETED", "CANCELLED"].includes(workOrder.workOrderStatus.toUpperCase()) && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="text-red-600 hover:text-red-700 bg-transparent"
-                          >
-                            Cancel Request
-                          </Button>
-                        )}
+
+                      {hasAfterImages && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => openImageViewer(workOrder.afterImages, "After Images")}
+                        >
+                          <Eye className="w-4 h-4 mr-2" />
+                          After Images ({workOrder.afterImages.length})
+                        </Button>
+                      )}
+
+                      {isPending && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-red-600 hover:text-red-700 bg-transparent"
+                          onClick={() => handleCancelWorkOrder(workOrder.id)}
+                          disabled={isCancelling}
+                        >
+                          {isCancelling ? (
+                            <>
+                              <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                              Cancelling...
+                            </>
+                          ) : (
+                            <>
+                              <XCircle className="w-4 h-4 mr-2" />
+                              Cancel Request
+                            </>
+                          )}
+                        </Button>
+                      )}
                     </div>
                   </div>
                 )
@@ -643,6 +758,14 @@ export default function MaintenancePage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Image Viewer */}
+      <ImageViewer
+        images={viewingImages}
+        isOpen={imageViewerOpen}
+        onClose={() => setImageViewerOpen(false)}
+        title={imageViewerTitle}
+      />
     </div>
   )
 }

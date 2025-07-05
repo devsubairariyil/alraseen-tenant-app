@@ -1,10 +1,27 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080"
+import type { ApiResponse, HouseholdMember } from "./types/api-responses"
+import type {
+  LoginResponse,
+  TenantDetailsResponse,
+  LeaseDetailsResponse,
+  PaymentResponse,
+  RefundResponse,
+  WorkOrderResponse,
+  FileUploadResponse,
+} from "./types/api-responses"
+import type {
+  LoginRequest,
+  ChangePasswordRequest,
+  ForgotPasswordRequest,
+  VerifyOtpRequest,
+  EmergencyContactRequest,
+  CreateWorkOrderRequest,
+  UpdateUserDocumentRequest,
+  UpdateProfileRequest,
+  CreateHouseholdMemberRequest,
+  UpdateHouseholdMemberRequest,
+} from "./types/api-requests"
 
-interface ApiResponse<T> {
-  data: T
-  status: string
-  message?: string
-}
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080"
 
 class ApiClient {
   private baseURL: string
@@ -28,6 +45,14 @@ class ApiClient {
     this.token = null
     if (typeof window !== "undefined") {
       localStorage.removeItem("accessToken")
+      localStorage.removeItem("userData")
+    }
+  }
+
+  private handleUnauthorized() {
+    this.clearToken()
+    if (typeof window !== "undefined") {
+      window.location.href = "/"
     }
   }
 
@@ -42,30 +67,36 @@ class ApiClient {
       headers.Authorization = `Bearer ${this.token}`
     }
 
-    const response = await fetch(url, {
-      ...options,
-      headers,
-    })
+    try {
+      const response = await fetch(url, {
+        ...options,
+        headers,
+      })
 
-    if (!response.ok) {
-      throw new Error(`API Error: ${response.status} ${response.statusText}`)
+      if (response.status === 401) {
+        this.handleUnauthorized()
+        throw new Error("Unauthorized - Please login again")
+      }
+
+      if (!response.ok) {
+        throw new Error(`API Error: ${response.status} ${response.statusText}`)
+      }
+
+      return response.json()
+    } catch (error) {
+      if (error instanceof Error && error.message.includes("401")) {
+        this.handleUnauthorized()
+      }
+      throw error
     }
-
-    return response.json()
   }
 
   // Auth endpoints
-  async login(email: string, password: string) {
-    const response = await this.request<{
-      accessToken: string
-      userId: string
-      email: string
-      firstName: string
-      lastName: string
-      role: string
-    }>("/auth/login", {
+  async login(request: LoginRequest) {
+    console.log(JSON.stringify(request))
+    const response = await this.request<LoginResponse>("/auth/login", {
       method: "POST",
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify(request),
     })
 
     if (response.data.accessToken) {
@@ -75,219 +106,98 @@ class ApiClient {
     return response
   }
 
-  async logout() {
-    await this.request("/auth/logout", { method: "POST" })
-    this.clearToken()
+  async verifyOtp(request: VerifyOtpRequest) {
+    const response = await this.request<LoginResponse>("/auth/verify-otp", {
+      method: "POST",
+      body: JSON.stringify(request),
+    })
+
+    if (response.data.accessToken) {
+      this.setToken(response.data.accessToken)
+    }
+
+    return response
   }
 
-  async changePassword(oldPassword: string, newPassword: string) {
+  async forgotPassword(request: ForgotPasswordRequest) {
+    return this.request<{ message: string }>("/auth/forgot-password", {
+      method: "POST",
+      body: JSON.stringify(request),
+    })
+  }
+
+  async logout() {
+    try {
+      await this.request("/auth/logout", { method: "POST" })
+    } finally {
+      this.clearToken()
+    }
+  }
+
+  async changePassword(request: ChangePasswordRequest) {
     return this.request("/auth/change-password", {
       method: "POST",
-      body: JSON.stringify({ oldPassword, newPassword }),
+      body: JSON.stringify(request),
     })
   }
 
   // Tenant endpoints
   async getTenantDetails() {
-    return this.request<{
-      tenantId: string
-      firstName: string
-      lastName: string
-      primaryEmail: string
-      primaryMobile: string
-      emiratesIdNo: string
-      emiratesIdExpiry: string
-      nationality: string
-      profileImage?: string
-      emergencyContacts: Array<{
-        contactId: string
-        name: string
-        relationship: string
-        mobile: string
-        email: string
-      }>
-      houseHoldMembers: Array<{
-        memberId: string
-        name: string
-        relationship: string
-        emiratesIdNo: string
-        emiratesIdExpiry: string
-        nationality: string
-      }>
-    }>("/tenants/my-details")
+    return this.request<TenantDetailsResponse>("/tenants/my-details")
   }
 
   async getMyLeases() {
-    return this.request<
-      Array<{
-        rentalAgreement: {
-          leaseId: string
-          propertyName: string
-          flatNumber: string
-          location: string
-          rentAmount: number
-          securityDeposit: number
-          leaseStartDate: string
-          leaseEndDate: string
-          leaseStatus: string
-          currency: string
-          sharingType: string
-          numberOfOccupants: number
-        }
-        parkingList: Array<{
-          parkingId: string
-          slotNumber: string
-          numberPlate: string
-          model: string
-          parkingFee: number
-          includedInRent: boolean
-        }>
-        houseHoldMembers: Array<{
-          memberId: string
-          name: string
-          relationship: string
-          emiratesIdNo: string
-          nationality: string
-        }>
-      }>
-    >("/tenants/my-leases")
+    return this.request<LeaseDetailsResponse[]>("/tenants/my-leases")
   }
 
   async getMyRefunds() {
-    return this.request<
-      Array<{
-        paymentId: string
-        amount: number
-        category: string
-        subcategory: string
-        description: string
-        paymentStatus: string
-        date: string
-        currency: string
-        receiptNumber?: string
-        voucherNumber?: string
-      }>
-    >("/tenants/my-refunds")
+    return this.request<RefundResponse[]>("/tenants/my-refunds")
   }
 
   // Payment endpoints
   async getMyPayments() {
-    return this.request<
-      Array<{
-        propertyId: string
-        tenantId: string
-        depositAccountId: string
-        receiptId: string
-        processedByUserId: string
-        unitId: string
-        propertyName: string
-        flatNumber: string
-        depositAccountName: string
-        tenantName: string
-        staffName: string
-        receiptNumber: string
-        date: string
-        amount: number
-        currency: string
-        payerId: string
-        payerName: string
-        paymentReason: string
-        referenceNumber: string
-        method: "CASH" | "CHEQUE" | "BANK_TRANSFER" | "CARD" | "ONLINE"
-        chequeNumber: string
-        bankName: string
-        chequeIssueDate: string
-        chequeImageUrl: string
-        receiptStatus: "PDC_DEPOSITED" | "CLEARED" | "BOUNCED" | "PENDING" | "CANCELLED"
-        createdAt: string
-        updatedAt: string
-        remarks: string
-      }>
-    >("/tenants/my-payments")
+    return this.request<PaymentResponse[]>("/tenants/my-payments")
   }
 
   // Work Orders endpoints
   async getWorkOrders() {
-    return this.request<
-      Array<{
-        workOrderId: string
-        title: string
-        requestedByUserId: string
-        requesterType: string
-        propertyId: string
-        unitId: string
-        category: string
-        subcategory: string
-        description: string
-        workOrderStatus: string
-        priority: string
-        assignedToUserId: string
-        requiresLandlordApproval: boolean
-        landlordApprovalStatus: string
-        approvedByLandlordId: string
-        landlordRemarks: string
-        beforeImages: string[]
-        afterImages: string[]
-        remarks: string
-        createdAt: string
-        updatedAt: string
-        propertyName?: string
-        flatNumber?: string
-        assignedToName?: string
-      }>
-    >("/work-orders")
+    return this.request<WorkOrderResponse[]>("/work-orders")
   }
 
-  async createWorkOrder(workOrder: {
-    title: string
-    requestedByUserId: string
-    requesterType: string
-    propertyId: string
-    unitId: string
-    category: string
-    subcategory: string
-    description: string
-    workOrderStatus: "PENDING"
-    priority: string
-    assignedToUserId?: string
-    requiresLandlordApproval: boolean
-    landlordApprovalStatus: "PENDING"
-    approvedByLandlordId?: string
-    landlordRemarks?: string
-    beforeImages: string[]
-    remarks?: string
-  }) {
+   async updateTenantProfile(data: UpdateProfileRequest): Promise<ApiResponse<TenantDetailsResponse>> {
+    return this.request<TenantDetailsResponse>("/tenants/self", {
+      method: "PUT",
+      body: JSON.stringify(data),
+    })
+  }
+
+
+  async createWorkOrder(request: CreateWorkOrderRequest) {
     return this.request<{ workOrderId: string }>("/work-orders", {
       method: "POST",
-      body: JSON.stringify(workOrder),
+      body: JSON.stringify(request),
     })
   }
-
+  async cancelWorkOrder(workOrderId: string) {
+    return this.request(`/work-orders/${workOrderId}`, {
+      method: "PUT",
+      body: JSON.stringify({
+        workOrderStatus: 'CANCELLED'
+      }),
+    })
+  }
   // Emergency Contacts
-  async addEmergencyContact(contact: {
-    name: string
-    relationship: string
-    mobile: string
-    email: string
-  }) {
+  async addEmergencyContact(request: EmergencyContactRequest) {
     return this.request<{ contactId: string }>("/tenants/emergency-contacts", {
       method: "POST",
-      body: JSON.stringify(contact),
+      body: JSON.stringify(request),
     })
   }
 
-  async updateEmergencyContact(
-    contactId: string,
-    contact: {
-      name: string
-      relationship: string
-      mobile: string
-      email: string
-    },
-  ) {
+  async updateEmergencyContact(contactId: string, request: EmergencyContactRequest) {
     return this.request(`/tenants/emergency-contacts/${contactId}`, {
       method: "PUT",
-      body: JSON.stringify(contact),
+      body: JSON.stringify(request),
     })
   }
 
@@ -297,19 +207,39 @@ class ApiClient {
     })
   }
 
-  // User Document Update
-  async updateUserDocument(document: {
-    documentType: string
-    referenceId: string
-  }) {
-    return this.request("/users/document", {
+
+  // Household Members
+  async createHouseholdMember(request: CreateHouseholdMemberRequest) {
+    return this.request<{ memberId: string }>("/tenants/household-members", {
       method: "POST",
-      body: JSON.stringify(document),
+      body: JSON.stringify(request),
+    })
+  }
+
+  async updateHouseholdMember(memberId: string, request: UpdateHouseholdMemberRequest) {
+    return this.request<HouseholdMember>(`/tenants/household-members/${memberId}`, {
+      method: "PUT",
+      body: JSON.stringify(request),
+    })
+  }
+
+  async deleteHouseholdMember(memberId: string) {
+    return this.request(`/tenants/household-members/${memberId}`, {
+      method: "DELETE",
+    })
+  }
+
+
+  // User Document Update
+  async updateUserDocument(request: UpdateUserDocumentRequest) {
+    return this.request("/users/document", {
+      method: "PUT",
+      body: JSON.stringify(request),
     })
   }
 
   // File upload
-  async uploadFile(file: File, category: string) {
+  async uploadFile(file: File, category: string): Promise<FileUploadResponse> {
     const formData = new FormData()
     formData.append("file", file)
     formData.append("fileCategory", category)
@@ -320,17 +250,29 @@ class ApiClient {
       headers.Authorization = `Bearer ${this.token}`
     }
 
-    const response = await fetch(`${this.baseURL}/files/upload`, {
-      method: "POST",
-      headers,
-      body: formData,
-    })
+    try {
+      const response = await fetch(`${this.baseURL}/files/upload`, {
+        method: "POST",
+        headers,
+        body: formData,
+      })
 
-    if (!response.ok) {
-      throw new Error(`Upload failed: ${response.status}`)
+      if (response.status === 401) {
+        this.handleUnauthorized()
+        throw new Error("Unauthorized - Please login again")
+      }
+
+      if (!response.ok) {
+        throw new Error(`Upload failed: ${response.status}`)
+      }
+
+      return response.json() as Promise<FileUploadResponse>
+    } catch (error) {
+      if (error instanceof Error && error.message.includes("401")) {
+        this.handleUnauthorized()
+      }
+      throw error
     }
-
-    return response.json()
   }
 }
 

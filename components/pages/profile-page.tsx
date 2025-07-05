@@ -7,7 +7,7 @@ import { Mail, Smartphone, BadgeIcon as IdCard, Calendar, Car, CheckCircle, More
 const userDetails = {
   name: "Ravishanker Lalchand",
   email: "ravispanish@gmail.com",
-  mobile: "052 1090268",
+  mobile: "002 1090268",
   emiratesId: "78419800549202-4",
   idExpiry: "07/07/2026",
   parking: "Yes",

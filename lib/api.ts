@@ -90,6 +90,7 @@ class ApiClient {
 
   // Auth endpoints
   async login(request: LoginRequest) {
+    console.log(JSON.stringify(request))
     const response = await this.request<LoginResponse>("/auth/login", {
       method: "POST",
       body: JSON.stringify(request),
@@ -166,7 +167,14 @@ class ApiClient {
       body: JSON.stringify(request),
     })
   }
-
+  async cancelWorkOrder(workOrderId: string) {
+    return this.request(`/work-orders/${workOrderId}`, {
+      method: "PUT",
+      body: JSON.stringify({
+        workOrderStatus: 'CANCELLED'
+      }),
+    })
+  }
   // Emergency Contacts
   async addEmergencyContact(request: EmergencyContactRequest) {
     return this.request<{ contactId: string }>("/tenants/emergency-contacts", {
@@ -188,10 +196,33 @@ class ApiClient {
     })
   }
 
+
+  // Household Members
+  async createHouseholdMember(request: CreateHouseholdMemberRequest) {
+    return this.request<{ memberId: string }>("/tenants/household-members", {
+      method: "POST",
+      body: JSON.stringify(request),
+    })
+  }
+
+  async updateHouseholdMember(memberId: string, request: UpdateHouseholdMemberRequest) {
+    return this.request<HouseholdMember>(`/tenants/household-members/${memberId}`, {
+      method: "PUT",
+      body: JSON.stringify(request),
+    })
+  }
+
+  async deleteHouseholdMember(memberId: string) {
+    return this.request(`/tenants/household-members/${memberId}`, {
+      method: "DELETE",
+    })
+  }
+
+
   // User Document Update
   async updateUserDocument(request: UpdateUserDocumentRequest) {
     return this.request("/users/document", {
-      method: "POST",
+      method: "PUT",
       body: JSON.stringify(request),
     })
   }

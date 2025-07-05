@@ -68,14 +68,14 @@ export default function TenantProfile() {
       setIsUploadingImage(true)
 
       // Upload file first
-      const uploadResponse = await apiClient.uploadFile(file, "PROFILE_IMAGE")
-      const referenceId = uploadResponse.referenceId || uploadResponse.fileId
+      const uploadResponse = await apiClient.uploadFile(file, "PROFILE_PICTURE")
+      const referenceId = uploadResponse.data
 
       if (referenceId) {
         // Update profile with the reference ID
         await apiClient.updateUserDocument({
-          documentType: "PROFILE_IMAGE",
-          referenceId: referenceId,
+          type: "PROFILE_PICTURE",
+          documentReference: referenceId,
         })
 
         // Refresh tenant data

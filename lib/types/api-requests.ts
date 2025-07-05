@@ -26,6 +26,35 @@ export interface EmergencyContactRequest {
   email: string
 }
 
+
+// Household Member Request Types
+export interface CreateHouseholdMemberRequest {
+  name: string
+  email: string
+  phone: string
+  relationship: string
+  emiratesIdNo: string
+  emiratesIdExpiry: string
+  nationality: string
+  documentPath?: string
+  joiningDate: string
+
+}
+
+export interface UpdateHouseholdMemberRequest {
+  name?: string
+  email?: string
+  phone?: string
+  relationship?: string
+  emiratesIdNo?: string
+  emiratesIdExpiry?: string
+  nationality?: string
+  documentPath?: string
+  joiningDate?: string
+  leavingDate?: string
+  status?: "ACTIVE" | "LEFT"
+}
+
 // Work Order Request Types
 export interface CreateWorkOrderRequest {
   title: string
@@ -49,8 +78,8 @@ export interface CreateWorkOrderRequest {
 
 // User Document Request Types
 export interface UpdateUserDocumentRequest {
-  documentType: string
-  referenceId: string
+  type: string
+  documentReference: string
 }
 
 // File Upload Request Types

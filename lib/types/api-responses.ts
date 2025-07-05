@@ -32,6 +32,12 @@ export interface HouseholdMember {
   emiratesIdNo: string
   emiratesIdExpiry: string
   nationality: string
+  joiningDate: string
+  leavingDate: string
+  email: string
+  mobile: string
+  documentPath: string
+  status: string
 }
 
 export interface TenantDetailsResponse {
@@ -61,6 +67,8 @@ export interface ParkingDetails {
 export interface RentalAgreement {
   leaseId: string
   propertyName: string
+  propertyId: string
+  flatId: string
   flatNumber: string
   location: string
   rentAmount: number
@@ -127,7 +135,7 @@ export interface RefundResponse {
 
 // Work Order Response Types
 export interface WorkOrderResponse {
-  workOrderId: string
+  id: string
   title: string
   requestedByUserId: string
   requesterType: string

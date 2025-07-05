@@ -24,12 +24,13 @@ import {
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { User, Home, CreditCard, RefreshCw, Wrench, Phone, LogOut, Bell, Search, Settings } from "lucide-react"
+import { User, Home, CreditCard, RefreshCw, Wrench, LogOut, Bell, Search, Settings, Users } from "lucide-react"
 import Image from "next/image"
 
 const sidebarItems = [
   { id: "profile", label: "Profile", icon: User, href: "/dashboard" },
   { id: "properties", label: "Properties", icon: Home, href: "/dashboard/properties" },
+  { id: "co-occupants", label: "Co-Occupants", icon: Users, href: "/dashboard/co-occupants" },
   { id: "payments", label: "Payments", icon: CreditCard, href: "/dashboard/payments" },
   { id: "refunds", label: "Refunds", icon: RefreshCw, href: "/dashboard/refunds" },
   { id: "maintenance", label: "Maintenance", icon: Wrench, href: "/dashboard/maintenance" },

@@ -41,7 +41,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (email: string, password: string) => {
     try {
-      const response = await apiClient.login(email, password)
+      const response = await apiClient.login({email, password})
       const userData = {
         userId: response.data.userId,
         email: response.data.email,

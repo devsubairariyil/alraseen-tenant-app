@@ -27,50 +27,17 @@ import {
   Trash2,
 } from "lucide-react"
 import { apiClient } from "@/lib/api"
-
-interface TenantData {
-  tenantId: string
-  firstName: string
-  lastName: string
-  primaryEmail: string
-  primaryMobile: string
-  emiratesIdNo: string
-  emiratesIdExpiry: string
-  nationality: string
-  profileImage?: string
-  emergencyContacts: Array<{
-    contactId: string
-    name: string
-    relationship: string
-    mobile: string
-    email: string
-  }>
-  houseHoldMembers: Array<{
-    memberId: string
-    name: string
-    relationship: string
-    emiratesIdNo: string
-    emiratesIdExpiry: string
-    nationality: string
-  }>
-}
-
-interface EmergencyContact {
-  contactId?: string
-  name: string
-  relationship: string
-  mobile: string
-  email: string
-}
+import type { TenantDetailsResponse, EmergencyContact } from "@/lib/types/api-responses"
+import type { EmergencyContactRequest } from "@/lib/types/api-requests"
 
 export default function TenantProfile() {
-  const [tenantData, setTenantData] = useState<TenantData | null>(null)
+  const [tenantData, setTenantData] = useState<TenantDetailsResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
   const [isUploadingImage, setIsUploadingImage] = useState(false)
   const [isEmergencyDialogOpen, setIsEmergencyDialogOpen] = useState(false)
   const [editingContact, setEditingContact] = useState<EmergencyContact | null>(null)
-  const [emergencyForm, setEmergencyForm] = useState<EmergencyContact>({
+  const [emergencyForm, setEmergencyForm] = useState<EmergencyContactRequest>({
     name: "",
     relationship: "",
     mobile: "",
@@ -146,7 +113,12 @@ export default function TenantProfile() {
 
   const handleEditContact = (contact: EmergencyContact) => {
     setEditingContact(contact)
-    setEmergencyForm(contact)
+    setEmergencyForm({
+      name: contact.name,
+      relationship: contact.relationship,
+      mobile: contact.mobile,
+      email: contact.email,
+    })
     setIsEmergencyDialogOpen(true)
   }
 

@@ -33,7 +33,6 @@ const sidebarItems = [
   { id: "payments", label: "Payments", icon: CreditCard, href: "/dashboard/payments" },
   { id: "refunds", label: "Refunds", icon: RefreshCw, href: "/dashboard/refunds" },
   { id: "maintenance", label: "Maintenance", icon: Wrench, href: "/dashboard/maintenance" },
-  { id: "emergency", label: "Emergency Contacts", icon: Phone, href: "/dashboard/emergency" },
 ]
 
 function AppSidebar() {

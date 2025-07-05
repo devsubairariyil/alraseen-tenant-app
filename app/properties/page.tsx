@@ -1,5 +1,5 @@
 import DashboardLayout from "@/components/layout/dashboard-layout"
-import PropertiesPage from "@/components/pages/properties-page"
+import PropertiesPage from "../dashboard/properties/page"
 
 export default function Properties() {
   return (

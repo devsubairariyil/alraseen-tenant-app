@@ -1,5 +1,5 @@
 import DashboardLayout from "@/components/layout/dashboard-layout"
-import PaymentsPage from "@/components/pages/payments-page"
+import PaymentsPage from "../dashboard/payments/page"
 
 export default function Payments() {
   return (

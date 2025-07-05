@@ -1,5 +1,5 @@
+import MaintenancePage from "@/components/dashboard/maintenance-page"
 import DashboardLayout from "@/components/layout/dashboard-layout"
-import MaintenancePage from "@/components/pages/maintenance-page"
 
 export default function Maintenance() {
   return (

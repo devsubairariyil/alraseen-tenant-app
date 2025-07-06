@@ -4,9 +4,9 @@
   "private": true,
   "scripts": {
     "lint": "next lint",
-    "dev": "next dev -p 3000",
-    "build": "next build",
-    "start": "echo PORT is $PORT && cross-env next start -p $PORT"
+    "dev": "next dev",
+    "build": "next build && next export",
+    "start": "serve -s out"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
@@ -55,6 +55,7 @@
     "react-hook-form": "^7.54.1",
     "react-resizable-panels": "^2.1.7",
     "recharts": "2.15.0",
+    "serve": "^14.2.4",
     "sonner": "^1.7.1",
     "tailwind-merge": "^2.5.5",
     "tailwindcss-animate": "^1.0.7",

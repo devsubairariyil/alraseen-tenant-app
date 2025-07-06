@@ -5,8 +5,9 @@
   "scripts": {
     "lint": "next lint",
     "dev": "next dev",
-    "build": "next build && next export",
-    "start": "serve -s out"
+    "build": "next build", 
+    "start": "next start"
+  
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",

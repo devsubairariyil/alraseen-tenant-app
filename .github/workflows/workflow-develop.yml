@@ -17,5 +17,7 @@ jobs:
 
       - name: Add .env variable
         run: echo "NEXT_PUBLIC_API_BASE_URL=https://api-dev.alraseen.ae" > .env
+      - name: Add PORT number
+        run: echo "PORT=3000" > .env
 
       - run: railway up --service=${{ env.SVC_ID }} --ci

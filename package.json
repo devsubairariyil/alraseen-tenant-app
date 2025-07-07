@@ -6,7 +6,7 @@
     "lint": "next lint",
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "serve out -l $PORT"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",

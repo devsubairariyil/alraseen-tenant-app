@@ -4,9 +4,13 @@ on:
   push:
     branches:
       - develop
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    env:
+      SVC_ID: 84a627f5-ea6f-42d9-92af-dde86fe2d1a5
+      RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN_DEV }}
     steps:
       - uses: actions/checkout@v3
 
@@ -27,10 +31,7 @@ jobs:
         run: yarn build
 
       - name: Install Railway CLI
-        run: npm install -g railway
+        run: npm install -g @railway/cli
 
       - name: Deploy static site to Railway
         run: cd out && railway up --service=${{ env.SVC_ID }} --ci
-    env:
-      SVC_ID: 84a627f5-ea6f-42d9-92af-dde86fe2d1a5
-      RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN_DEV }}

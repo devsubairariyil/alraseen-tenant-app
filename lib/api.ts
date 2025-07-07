@@ -93,10 +93,12 @@ class ApiClient {
 
   // Auth endpoints
   async login(request: LoginRequest) {
-    console.log(JSON.stringify(request))
     const response = await this.request<LoginResponse>("/auth/login", {
       method: "POST",
-      body: JSON.stringify(request),
+      body: JSON.stringify({
+        ...request,
+        userType: "TENANT"
+      }),
     })
 
     if (response.data.accessToken) {

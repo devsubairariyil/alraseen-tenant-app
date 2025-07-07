@@ -15,9 +15,16 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Add .env variable
-        run: echo "NEXT_PUBLIC_API_BASE_URL=https://api-dev.alraseen.ae" > .env
-      - name: Add PORT number
-        run: echo "PORT=3000" > .env
+      - name: Add environment variables
+        run: |
+          echo "NEXT_PUBLIC_API_BASE_URL=https://api-dev.alraseen.ae" > .env
+          echo "PORT=3000" >> .env
 
-      - run: railway up --service=${{ env.SVC_ID }} --ci
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Build Next.js static site
+        run: yarn build
+
+      - name: Deploy static site to Railway
+        run: cd out && railway up --service=${{ env.SVC_ID }} --ci

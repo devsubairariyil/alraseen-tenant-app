@@ -1,3 +1,9 @@
+name: Deploy to Railway Develop
+
+on:
+  push:
+    branches:
+      - develop
 jobs:
   deploy:
     runs-on: ubuntu-latest

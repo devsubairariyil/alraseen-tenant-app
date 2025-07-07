@@ -179,7 +179,7 @@ export default function LoginForm() {
         </Card>
       </div>
 
-      <ForgotPasswordModal isOpen={showForgotPassword} onClose={() => setShowForgotPassword(false)} />
+      <ForgotPasswordModal open={showForgotPassword} onOpenChange={setShowForgotPassword} />
     </>
   )
 }

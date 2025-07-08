@@ -90,7 +90,16 @@ class ApiClient {
       throw error
     }
   }
+  async getAvailableProperties(): Promise<ApiResponse<any>> {
+    return this.request<any>("/assets-info/properties")
+  }
 
+  async submitRentalInterest(data: any): Promise<ApiResponse<any>> {
+    return this.request<any>("/guest/submit-rent-interest", {
+      method: "POST",
+      body: JSON.stringify(data),
+    })
+  }
   // Auth endpoints
   async login(request: LoginRequest) {
     const response = await this.request<LoginResponse>("/auth/login", {
@@ -108,6 +117,12 @@ class ApiClient {
     return response
   }
 
+  async requestOtp(email: string): Promise<ApiResponse<void>> {
+    return this.request<void>("/auth/request-otp", {
+      method: "POST",
+      body: JSON.stringify({ email }),
+    })
+  }
   async verifyOtp(request: VerifyOtpRequest) {
     const response = await this.request<LoginResponse>("/auth/verify-otp", {
       method: "POST",

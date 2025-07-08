@@ -5,6 +5,22 @@ export interface ApiResponse<T> {
   message?: string
 }
 
+export interface PropertyInfo {
+  propertyId: string
+  propertyName: string
+  location: string
+  totalUnits: number
+  parkingLots: number
+  occupiedUnits: number
+  filledParkingSlots: number
+  managementFee: number
+  numberOfLandlords: number
+}
+
+export interface PropertiesResponse {
+  data: PropertyInfo[]
+}
+
 // Auth Response Types
 export interface LoginResponse {
   accessToken: string

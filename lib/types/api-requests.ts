@@ -16,6 +16,7 @@ export interface ForgotPasswordRequest {
 export interface VerifyOtpRequest {
   email: string
   otp: string
+  otpAction?: string
 }
 
 // Emergency Contact Request Types

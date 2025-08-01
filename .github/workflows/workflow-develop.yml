@@ -3,7 +3,7 @@ name: Deploy to Railway Develop
 on:
   push:
     branches:
-      - develop
+      - develop-ignored
 
 jobs:
   deploy:

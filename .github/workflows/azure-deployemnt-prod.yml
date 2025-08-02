@@ -4,7 +4,7 @@ name: Alraseen Prod Deployment - Azure
 on:
   push:
     branches:
-      - develop
+      - main
 
 jobs:
   build_and_deploy_job:
@@ -18,7 +18,7 @@ jobs:
           lfs: false
       - name: Add .env variable
         run: |
-         echo "NEXT_PUBLIC_API_BASE_URL=https://alraseen-backend-fyemducgdegkeuac.uaenorth-01.azurewebsites.net" > .env
+         echo "NEXT_PUBLIC_API_BASE_URL=https://dev-api-alraseen.azurewebsites.net" > .env
          echo "PORT=3000" >> .env
 
       - name: Install dependencies

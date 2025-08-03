@@ -113,10 +113,7 @@ export default function LeaseDetails() {
           <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">My Properties</h2>
           <p className="text-gray-600 text-sm md:text-base">Your current rental agreements and property details</p>
         </div>
-        <Button className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 w-full sm:w-auto">
-          <Download className="w-4 h-4 mr-2" />
-          Download Agreement
-        </Button>
+        
       </div>
 
       {leaseData.map((lease, index) => (
@@ -278,16 +275,7 @@ export default function LeaseDetails() {
               </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-3 md:gap-4 mt-6 md:mt-8">
-              <Button className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 w-full sm:w-auto">
-                <Eye className="w-4 h-4 mr-2" />
-                View Agreement
-              </Button>
-              <Button variant="outline" className="w-full sm:w-auto bg-transparent">
-                <Download className="w-4 h-4 mr-2" />
-                Download Documents
-              </Button>
-            </div>
+            
           </CardContent>
         </Card>
       ))}

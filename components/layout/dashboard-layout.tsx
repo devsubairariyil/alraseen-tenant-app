@@ -7,7 +7,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
-import { Home, Building2, CreditCard, RefreshCw, Wrench, User, Menu, LogOut } from "lucide-react"
+import { Home, Building2, CreditCard, RefreshCw, Wrench, User, Menu, LogOut, PaperclipIcon } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
 import Image from "next/image"
 
@@ -15,6 +15,7 @@ const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: Home },
   { name: "Properties", href: "/dashboard/properties", icon: Building2 },
   { name: "Payments", href: "/dashboard/payments", icon: CreditCard },
+  { name: "Documents", href: "/dashboard/documents", icon: PaperclipIcon },
   { name: "Refunds", href: "/dashboard/refunds", icon: RefreshCw },
   { name: "Maintenance", href: "/dashboard/maintenance", icon: Wrench },
 ]

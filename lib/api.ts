@@ -1,4 +1,4 @@
-import type { ApiResponse, HouseholdMember } from "./types/api-responses"
+import type { ApiResponse, DocumentItem, HouseholdMember } from "./types/api-responses"
 import type {
   LoginResponse,
   TenantDetailsResponse,
@@ -167,18 +167,20 @@ class ApiClient {
     return this.request<LeaseDetailsResponse[]>("/tenants/my-leases")
   }
 
-  async getMyRefunds() {
-    return this.request<RefundResponse[]>("/tenants/my-refunds")
+  async getMyRefunds(leaseId: string) {
+    return this.request<RefundResponse[]>("/tenants/my-refunds?leaseId=" + leaseId)
   }
-
+ async getMyDocuments() {
+    return this.request<DocumentItem[]>("/documents")
+  }
   // Payment endpoints
-  async getMyPayments() {
-    return this.request<PaymentResponse[]>("/tenants/my-payments")
+  async getMyPayments(leaseId: string) {
+    return this.request<PaymentResponse[]>("/tenants/my-payments?leaseId=" + leaseId)
   }
 
   // Work Orders endpoints
   async getWorkOrders() {
-    return this.request<WorkOrderResponse[]>("/work-orders")
+    return this.request<WorkOrderResponse[]>("/tenants/my-work-orders")
   }
 
    async updateTenantProfile(data: UpdateProfileRequest): Promise<ApiResponse<TenantDetailsResponse>> {
@@ -190,7 +192,7 @@ class ApiClient {
 
 
   async createWorkOrder(request: CreateWorkOrderRequest) {
-    return this.request<{ workOrderId: string }>("/work-orders", {
+    return this.request<string>("/work-orders", {
       method: "POST",
       body: JSON.stringify(request),
     })

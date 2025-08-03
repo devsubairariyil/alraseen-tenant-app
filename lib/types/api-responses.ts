@@ -197,3 +197,15 @@ export interface TenantDetailsResponse {
   createdAt: string
   updatedAt: string
 }
+export interface DocumentItem {
+  id: string;
+  documentName: string;
+  documentOwnerName: string;
+  documentOwnerId: string;
+  entityId: string;
+  purpose: string;
+  documentUrl: string;
+  uploadedBy: string;
+  uploadedByName: string;
+  uploadedAt: string;
+}

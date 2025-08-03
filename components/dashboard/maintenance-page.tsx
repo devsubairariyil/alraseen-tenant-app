@@ -31,6 +31,7 @@ import {
   Wifi,
   Eye,
   XCircle,
+  DollarSign,
 } from "lucide-react"
 import { apiClient } from "@/lib/api"
 import { formatDate } from "@/lib/utils"
@@ -38,12 +39,52 @@ import { useAuth } from "@/lib/auth-context"
 import type { WorkOrderResponse, LeaseDetailsResponse } from "@/lib/types/api-responses"
 
 const categories = [
+  { value: "FINANCE", label: "Finance", icon: DollarSign },
+  { value: "DOCUMENT", label: "Document", icon: DollarSign },
   { value: "HVAC", label: "HVAC", icon: Thermometer },
   { value: "PLUMBING", label: "Plumbing", icon: Droplets },
   { value: "ELECTRICAL", label: "Electrical", icon: Zap },
   { value: "TECHNOLOGY", label: "Technology", icon: Wifi },
   { value: "GENERAL", label: "General", icon: Wrench },
 ]
+
+const subcategoriesByCategory = {
+  FINANCE: [
+    { value: "OVERPAYMENT", label: "Overpayment" },
+    { value: "REFUND_REQUEST", label: "Refund Request" },
+    { value: "PAYMENT_DISPUTE", label: "Payment Dispute" },
+  ],
+  DOCUMENT: [
+    { value: "LEASE_RENEWAL", label: "Lease Renewal" },
+    { value: "DOCUMENT_UPDATE", label: "Document Update" },
+    { value: "CERTIFICATE_REQUEST", label: "Certificate Request" },
+  ],
+  HVAC: [
+    { value: "AC_NOT_COOLING", label: "AC Not Cooling" },
+    { value: "HEATER_ISSUE", label: "Heater Issue" },
+    { value: "VENTILATION_PROBLEM", label: "Ventilation Problem" },
+  ],
+  PLUMBING: [
+    { value: "LEAK", label: "Leak" },
+    { value: "CLOGGED_DRAIN", label: "Clogged Drain" },
+    { value: "WATER_PRESSURE", label: "Water Pressure Issue" },
+  ],
+  ELECTRICAL: [
+    { value: "POWER_OUTAGE", label: "Power Outage" },
+    { value: "FAULTY_WIRING", label: "Faulty Wiring" },
+    { value: "LIGHTING_ISSUE", label: "Lighting Issue" },
+  ],
+  TECHNOLOGY: [
+    { value: "INTERNET_ISSUE", label: "Internet Connectivity" },
+    { value: "SMART_HOME", label: "Smart Home Device" },
+    { value: "SECURITY_SYSTEM", label: "Security System" },
+  ],
+  GENERAL: [
+    { value: "MAINTENANCE", label: "General Maintenance" },
+    { value: "CLEANING", label: "Cleaning Request" },
+    { value: "OTHER", label: "Other Issue" },
+  ],
+}
 
 const priorities = [
   { value: "LOW", label: "Low", color: "bg-green-100 text-green-800" },
@@ -55,6 +96,7 @@ const priorities = [
 export default function MaintenancePage() {
   const [workOrders, setWorkOrders] = useState<WorkOrderResponse[]>([])
   const [leases, setLeases] = useState<LeaseDetailsResponse[]>([])
+  const [activeLeases, setActiveLeases] = useState<LeaseDetailsResponse[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
@@ -101,9 +143,9 @@ export default function MaintenancePage() {
 
       // Set default property/unit if there's an active lease
       const activeLeases = leasesResponse.data?.filter((lease) => lease.rentalAgreement.leaseStatus === "ACTIVE") || []
+      setActiveLeases(activeLeases)
 
       if (activeLeases.length > 0) {
-        console.log(activeLeases[0].rentalAgreement)
         setFormData((prev) => ({
           ...prev,
           propertyId: activeLeases[0].rentalAgreement.propertyId || "",
@@ -194,7 +236,6 @@ export default function MaintenancePage() {
         remarks: formData.remarks || "",
       }
 
-      console.log(workOrderData)
       await apiClient.createWorkOrder(workOrderData)
 
       // Reset form and close dialog
@@ -311,10 +352,6 @@ export default function MaintenancePage() {
     }
   }
 
-  const getActiveLeases = () => {
-    return leases.filter((lease) => lease.rentalAgreement.leaseStatus === "ACTIVE")
-  }
-
   if (loading) {
     return (
       <div className="space-y-6">
@@ -333,14 +370,13 @@ export default function MaintenancePage() {
   }
 
   const summary = calculateSummary()
-  const activeLeases = getActiveLeases()
 
   return (
     <div className="space-y-6 md:space-y-8">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">Maintenance Requests</h2>
-          <p className="text-gray-600 text-sm md:text-base">Submit and track your property maintenance requests</p>
+          <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">My Requests</h2>
+          <p className="text-gray-600 text-sm md:text-base">Submit and track your property requests</p>
         </div>
         <div className="flex gap-2">
           <Button onClick={fetchData} variant="outline" size="sm">
@@ -359,7 +395,7 @@ export default function MaintenancePage() {
             </DialogTrigger>
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>Create Maintenance Request</DialogTitle>
+                <DialogTitle>Create Request</DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
@@ -403,7 +439,7 @@ export default function MaintenancePage() {
                     <Label htmlFor="category">Category</Label>
                     <Select
                       value={formData.category}
-                      onValueChange={(value) => setFormData((prev) => ({ ...prev, category: value }))}
+                      onValueChange={(value) => setFormData((prev) => ({ ...prev, category: value, subcategory: "" }))}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select category" />
@@ -419,18 +455,19 @@ export default function MaintenancePage() {
                   </div>
 
                   <div>
-                    <Label htmlFor="priority">Priority</Label>
+                    <Label htmlFor="subcategory">Subcategory</Label>
                     <Select
-                      value={formData.priority}
-                      onValueChange={(value) => setFormData((prev) => ({ ...prev, priority: value }))}
+                      value={formData.subcategory}
+                      onValueChange={(value) => setFormData((prev) => ({ ...prev, subcategory: value }))}
+                      disabled={!formData.category}
                     >
                       <SelectTrigger>
-                        <SelectValue />
+                        <SelectValue placeholder="Select subcategory" />
                       </SelectTrigger>
                       <SelectContent>
-                        {priorities.map((priority) => (
-                          <SelectItem key={priority.value} value={priority.value}>
-                            {priority.label}
+                        {formData.category && subcategoriesByCategory[formData.category as keyof typeof subcategoriesByCategory]?.map((subcategory) => (
+                          <SelectItem key={subcategory.value} value={subcategory.value}>
+                            {subcategory.label}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -439,14 +476,22 @@ export default function MaintenancePage() {
                 </div>
 
                 <div>
-                  <Label htmlFor="subcategory">Subcategory</Label>
-                  <Input
-                    id="subcategory"
-                    value={formData.subcategory}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, subcategory: e.target.value }))}
-                    placeholder="Specific type of issue"
-                    required
-                  />
+                  <Label htmlFor="priority">Priority</Label>
+                  <Select
+                    value={formData.priority}
+                    onValueChange={(value) => setFormData((prev) => ({ ...prev, priority: value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {priorities.map((priority) => (
+                        <SelectItem key={priority.value} value={priority.value}>
+                          {priority.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div>
@@ -533,7 +578,7 @@ export default function MaintenancePage() {
               <AlertTriangle className="w-6 h-6 text-yellow-600" />
               <div>
                 <h3 className="font-semibold text-yellow-800">No Active Lease</h3>
-                <p className="text-yellow-700 text-sm">You need an active lease to create maintenance requests.</p>
+                <p className="text-yellow-700 text-sm">You need an active lease to create requests.</p>
               </div>
             </div>
           </CardContent>
@@ -579,8 +624,8 @@ export default function MaintenancePage() {
       {/* Work Orders List */}
       <Card className="border-0 shadow-xl bg-white/80 backdrop-blur-sm rounded-2xl">
         <CardHeader>
-          <CardTitle className="text-xl font-bold text-gray-900">Maintenance Requests</CardTitle>
-          <p className="text-gray-600">Track the status of your maintenance requests</p>
+          <CardTitle className="text-xl font-bold text-gray-900">Requests</CardTitle>
+          <p className="text-gray-600">Track the status of your requests</p>
         </CardHeader>
         <CardContent className="p-6">
           {error ? (
@@ -595,8 +640,8 @@ export default function MaintenancePage() {
           ) : workOrders.length === 0 ? (
             <div className="text-center py-12">
               <Wrench className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">No Maintenance Requests</h3>
-              <p className="text-gray-600 mb-4">You haven't submitted any maintenance requests yet.</p>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">No Requests</h3>
+              <p className="text-gray-600 mb-4">You haven't submitted any requests yet.</p>
               {activeLeases.length > 0 && (
                 <Button onClick={() => setIsCreateDialogOpen(true)}>
                   <Plus className="w-4 h-4 mr-2" />

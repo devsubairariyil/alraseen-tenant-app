@@ -180,7 +180,7 @@ class ApiClient {
 
   // Work Orders endpoints
   async getWorkOrders() {
-    return this.request<WorkOrderResponse[]>("/work-orders")
+    return this.request<WorkOrderResponse[]>("/tenants/my-work-orders")
   }
 
    async updateTenantProfile(data: UpdateProfileRequest): Promise<ApiResponse<TenantDetailsResponse>> {
@@ -192,7 +192,7 @@ class ApiClient {
 
 
   async createWorkOrder(request: CreateWorkOrderRequest) {
-    return this.request<{ workOrderId: string }>("/work-orders", {
+    return this.request<string>("/work-orders", {
       method: "POST",
       body: JSON.stringify(request),
     })

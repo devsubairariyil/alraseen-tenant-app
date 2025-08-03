@@ -24,7 +24,7 @@ import {
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { User, Home, CreditCard, PaperclipIcon , RefreshCw, Wrench, LogOut, Bell, Search, Settings, Users } from "lucide-react"
+import { User, Home, CreditCard, PaperclipIcon , RefreshCw, Wrench, LogOut, Bell, Search, Settings, Users, Layers } from "lucide-react"
 import Image from "next/image"
 
 const sidebarItems = [
@@ -34,7 +34,7 @@ const sidebarItems = [
   { id: "documents", label: "Documents", icon: PaperclipIcon, href: "/dashboard/documents" },
   { id: "payments", label: "Payments", icon: CreditCard, href: "/dashboard/payments" },
   { id: "refunds", label: "Refunds", icon: RefreshCw, href: "/dashboard/refunds" },
-  { id: "maintenance", label: "Maintenance", icon: Wrench, href: "/dashboard/maintenance" },
+  { id: "requests", label: "Requests", icon: Layers, href: "/dashboard/requests" },
 ]
 
 function AppSidebar() {

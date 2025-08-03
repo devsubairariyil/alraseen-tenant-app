@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
-import { RefreshCw, Calendar, DollarSign, CheckCircle, Clock, AlertCircle } from "lucide-react"
+import { RefreshCw, Calendar, DollarSign, CheckCircle, Clock, AlertCircle, ChevronDown, ChevronUp } from "lucide-react"
 import { apiClient } from "@/lib/api"
 import { formatCurrency, formatDate, getDisplayId } from "@/lib/utils"
 
@@ -20,12 +20,16 @@ interface RefundData {
   currency: string
   receiptNumber?: string
   voucherNumber?: string
+  leaseId: string
+  propertyName: string
+  flatNumber: string
 }
 
 export default function RefundsPage() {
   const [refundData, setRefundData] = useState<RefundData[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
+  const [expandedLeaseIds, setExpandedLeaseIds] = useState<string[]>([])
 
   useEffect(() => {
     fetchRefundData()
@@ -84,7 +88,7 @@ export default function RefundsPage() {
     const totalRefunds = refundData.reduce((sum, refund) => sum + refund.amount, 0)
     const pendingRefunds = refundData.filter((r) => r.paymentStatus.toUpperCase() === "PENDING").length
     const completedRefunds = refundData.filter((r) =>
-      ["COMPLETED", "PAID"].includes(r.paymentStatus.toUpperCase()),
+      ["COMPLETED", "PAID"].includes(r.paymentStatus.toUpperCase())
     ).length
 
     return {
@@ -94,6 +98,18 @@ export default function RefundsPage() {
       currency: refundData[0]?.currency || "AED",
     }
   }
+
+  const toggleExpand = (leaseId: string) => {
+    setExpandedLeaseIds((prev) =>
+      prev.includes(leaseId) ? prev.filter((id) => id !== leaseId) : [...prev, leaseId]
+    )
+  }
+
+  const groupedByLease = refundData.reduce<Record<string, RefundData[]>>((acc, item) => {
+    if (!acc[item.leaseId]) acc[item.leaseId] = []
+    acc[item.leaseId].push(item)
+    return acc
+  }, {})
 
   if (loading) {
     return (
@@ -126,7 +142,6 @@ export default function RefundsPage() {
         </Button>
       </div>
 
-      {/* Refund Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
         <Card className="border-0 shadow-lg bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-2xl">
           <CardContent className="p-4 md:p-6">
@@ -162,34 +177,20 @@ export default function RefundsPage() {
         </Card>
       </div>
 
-      {/* Refund History */}
-      <Card className="border-0 shadow-xl bg-white/80 backdrop-blur-sm rounded-2xl">
-        <CardHeader>
-          <CardTitle className="text-xl font-bold text-gray-900">Refund History</CardTitle>
-          <p className="text-gray-600">Track all your refund requests and their status</p>
-        </CardHeader>
-        <CardContent className="p-6">
-          {error ? (
-            <div className="text-center py-12">
-              <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Error Loading Refunds</h3>
-              <p className="text-gray-600 mb-4">{error}</p>
-              <Button onClick={fetchRefundData} variant="outline">
-                Try Again
-              </Button>
+      {Object.entries(groupedByLease).map(([leaseId, refunds]) => (
+        <Card key={leaseId} className="border-0 shadow-xl bg-white/80 backdrop-blur-sm rounded-2xl">
+          <CardHeader onClick={() => toggleExpand(leaseId)} className="cursor-pointer flex items-center justify-between">
+            <div>
+              <CardTitle className="text-lg font-bold text-gray-900">
+                {refunds[0]?.propertyName} - Unit {refunds[0]?.flatNumber}
+              </CardTitle>
+              <p className="text-gray-600">Refunds for this lease</p>
             </div>
-          ) : refundData.length === 0 ? (
-            <div className="text-center py-12">
-              <RefreshCw className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">No Refunds Found</h3>
-              <p className="text-gray-600 mb-4">You haven't requested any refunds yet.</p>
-              <Button onClick={fetchRefundData} variant="outline">
-                Refresh
-              </Button>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {refundData.map((refund) => (
+            {expandedLeaseIds.includes(leaseId) ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+          </CardHeader>
+          {expandedLeaseIds.includes(leaseId) && (
+            <CardContent className="p-6 space-y-4">
+              {refunds.map((refund) => (
                 <div
                   key={refund.paymentId}
                   className="border border-gray-200 rounded-xl p-4 md:p-6 hover:shadow-lg transition-shadow"
@@ -233,10 +234,10 @@ export default function RefundsPage() {
                   </div>
                 </div>
               ))}
-            </div>
+            </CardContent>
           )}
-        </CardContent>
-      </Card>
+        </Card>
+      ))}
     </div>
   )
 }

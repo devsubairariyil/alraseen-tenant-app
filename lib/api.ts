@@ -1,4 +1,4 @@
-import type { ApiResponse, HouseholdMember } from "./types/api-responses"
+import type { ApiResponse, DocumentItem, HouseholdMember } from "./types/api-responses"
 import type {
   LoginResponse,
   TenantDetailsResponse,
@@ -167,13 +167,15 @@ class ApiClient {
     return this.request<LeaseDetailsResponse[]>("/tenants/my-leases")
   }
 
-  async getMyRefunds() {
-    return this.request<RefundResponse[]>("/tenants/my-refunds")
+  async getMyRefunds(leaseId: string) {
+    return this.request<RefundResponse[]>("/tenants/my-refunds?leaseId=" + leaseId)
   }
-
+ async getMyDocuments() {
+    return this.request<DocumentItem[]>("/documents")
+  }
   // Payment endpoints
-  async getMyPayments() {
-    return this.request<PaymentResponse[]>("/tenants/my-payments")
+  async getMyPayments(leaseId: string) {
+    return this.request<PaymentResponse[]>("/tenants/my-payments?leaseId=" + leaseId)
   }
 
   // Work Orders endpoints

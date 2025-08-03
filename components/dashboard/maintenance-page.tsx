@@ -43,6 +43,7 @@ const categories = [
   { value: "DOCUMENT", label: "Document", icon: DollarSign },
   { value: "HVAC", label: "HVAC", icon: Thermometer },
   { value: "PLUMBING", label: "Plumbing", icon: Droplets },
+  { value: "FLOORING", label: "Flooring", icon: Wrench },
   { value: "ELECTRICAL", label: "Electrical", icon: Zap },
   { value: "TECHNOLOGY", label: "Technology", icon: Wifi },
   { value: "GENERAL", label: "General", icon: Wrench },
@@ -53,36 +54,48 @@ const subcategoriesByCategory = {
     { value: "OVERPAYMENT", label: "Overpayment" },
     { value: "REFUND_REQUEST", label: "Refund Request" },
     { value: "PAYMENT_DISPUTE", label: "Payment Dispute" },
+    { value: "OTHERS", label: "Others" }
   ],
   DOCUMENT: [
     { value: "LEASE_RENEWAL", label: "Lease Renewal" },
     { value: "DOCUMENT_UPDATE", label: "Document Update" },
     { value: "CERTIFICATE_REQUEST", label: "Certificate Request" },
+    { value: "OTHERS", label: "Others" }
   ],
   HVAC: [
     { value: "AC_NOT_COOLING", label: "AC Not Cooling" },
     { value: "HEATER_ISSUE", label: "Heater Issue" },
     { value: "VENTILATION_PROBLEM", label: "Ventilation Problem" },
+    { value: "OTHERS", label: "Others" }
   ],
   PLUMBING: [
     { value: "LEAK", label: "Leak" },
     { value: "CLOGGED_DRAIN", label: "Clogged Drain" },
     { value: "WATER_PRESSURE", label: "Water Pressure Issue" },
+    { value: "OTHERS", label: "Others" }
+  ],
+  FLOORING: [
+    { value: "DAMAGED_TILES", label: "Damaged Tiles" },
+    { value: "CARPET_REPAIR", label: "Carpet Repair" },
+    { value: "FFLOOR_CLEANING", label: "Floor Cleaning" },
+    { value: "OTHERS", label: "Others" }
   ],
   ELECTRICAL: [
     { value: "POWER_OUTAGE", label: "Power Outage" },
     { value: "FAULTY_WIRING", label: "Faulty Wiring" },
     { value: "LIGHTING_ISSUE", label: "Lighting Issue" },
+    { value: "OTHERS", label: "Others" }
   ],
   TECHNOLOGY: [
     { value: "INTERNET_ISSUE", label: "Internet Connectivity" },
     { value: "SMART_HOME", label: "Smart Home Device" },
     { value: "SECURITY_SYSTEM", label: "Security System" },
+    { value: "OTHERS", label: "Others" }
   ],
   GENERAL: [
     { value: "MAINTENANCE", label: "General Maintenance" },
     { value: "CLEANING", label: "Cleaning Request" },
-    { value: "OTHER", label: "Other Issue" },
+    { value: "OTHER", label: "Other Issue" }
   ],
 }
 

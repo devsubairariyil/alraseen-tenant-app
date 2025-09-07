@@ -137,7 +137,7 @@ class ApiClient {
   }
 
   async forgotPassword(request: ForgotPasswordRequest) {
-    return this.request<{ message: string }>("/auth/forgot-password", {
+    return this.request<{ message: string }>("/auth/request-password-reset", {
       method: "POST",
       body: JSON.stringify(request),
     })

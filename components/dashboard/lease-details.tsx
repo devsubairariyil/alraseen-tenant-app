@@ -52,7 +52,7 @@ export default function LeaseDetails() {
   const fetchLeaseData = async () => {
     try {
       const response = await apiClient.getMyLeases()
-      setLeaseData(response.data)
+      setLeaseData(response.data.leases)
     } catch (err) {
       setError("Failed to load lease details")
       console.error("Error fetching lease data:", err)

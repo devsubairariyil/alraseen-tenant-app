@@ -19,22 +19,9 @@ import { apiClient } from "@/lib/api"
 import { formatCurrency, formatDate, getDisplayId } from "@/lib/utils"
 import { TenantRefundRequestModal } from "@/components/dashboard/TenantRefundRequestModal"
 import { toast } from "@/hooks/use-toast"
+import { RefundData } from "@/lib/types/api-responses"
 
-interface RefundData {
-  paymentId: string
-  amount: number
-  category: string
-  subcategory: string
-  description: string
-  paymentStatus: string
-  date: string
-  currency: string
-  receiptNumber?: string
-  voucherNumber?: string
-  leaseId: string
-  propertyName: string
-  flatNumber: string
-}
+
 
 interface LeaseInfo {
   leaseId: string
@@ -64,7 +51,7 @@ export default function RefundsPage() {
       setLoading(true)
       setError("")
       const leaseResponse = await apiClient.getMyLeases()
-      const leases = leaseResponse.data.map((l: any) => ({
+      const leases = leaseResponse.data.leases.map((l: any) => ({
         leaseId: l.rentalAgreement.leaseId,
         propertyName: l.rentalAgreement.propertyName,
         flatNumber: l.rentalAgreement.flatNumber,
@@ -78,7 +65,7 @@ export default function RefundsPage() {
       const refundsData: Record<string, RefundData[]> = {}
       for (const lease of leases) {
         const res = await apiClient.getMyRefunds(lease.leaseId)
-        refundsData[lease.leaseId] = res.data || []
+        refundsData[lease.leaseId] = res.data.expenses || []
       }
       setRefundsMap(refundsData)
     } catch (err) {

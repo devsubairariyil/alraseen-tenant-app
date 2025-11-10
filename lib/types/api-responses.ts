@@ -102,9 +102,22 @@ export interface LeaseDetailsResponse {
   parkingList: ParkingDetails[]
   houseHoldMembers: HouseholdMember[]
 }
+export interface PaginatedLeasesResponse {
+  leases: LeaseDetailsResponse[];
+  currentPage: number;
+  totalPages: number;
+  totalLeases: number;
+}
+
+export interface PaginatedPaymentResponse {
+  receipts: PaymentData[];
+  currentPage: number;
+  totalPages: number;
+  totalLeases: number;
+}
 
 // Payment Response Types
-export interface PaymentResponse {
+export interface PaymentData {
   propertyId: string
   tenantId: string
   depositAccountId: string
@@ -118,7 +131,9 @@ export interface PaymentResponse {
   staffName: string
   receiptNumber: string
   date: string
-  amount: number
+  totalAmount: number
+  baseAmount: number
+  vatAmount: number
   currency: string
   payerId: string
   payerName: string
@@ -136,7 +151,7 @@ export interface PaymentResponse {
 }
 
 // Refund Response Types
-export interface RefundResponse {
+export interface RefundData {
   paymentId: string
   amount: number
   category: string
@@ -147,6 +162,12 @@ export interface RefundResponse {
   currency: string
   receiptNumber?: string
   voucherNumber?: string
+}
+export interface PaginatedRefundResponse {
+  expenses: RefundData[];
+  currentPage: number;
+  totalPages: number;
+  totalLeases: number;
 }
 
 // Work Order Response Types

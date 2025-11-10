@@ -28,25 +28,9 @@ import {
 import { apiClient } from "@/lib/api"
 import { formatCurrency, formatDate, getDisplayId } from "@/lib/utils"
 import PaymentReceiptModal from "@/components/dashboard/payment-receipt-modal"
+import { PaymentData } from "@/lib/types/api-responses"
 
-interface PaymentData {
-  receiptId: string
-  leaseId: string
-  propertyName: string
-  flatNumber: string
-  receiptNumber: string
-  amount: number
-  currency: string
-  paymentReason: string
-  date: string
-  method: string
-  receiptStatus: string
-  chequeNumber?: string
-  remarks?: string
-  staffName?: string
-  bankName?: string
-  chequeImageUrl?: string
-}
+
 
 interface LeaseInfo {
   leaseId: string
@@ -72,7 +56,7 @@ export default function PaymentsPage() {
     try {
       setLoading(true)
       const leaseResponse = await apiClient.getMyLeases()
-      const leases = leaseResponse.data.map((l: any) => ({
+      const leases = leaseResponse.data.leases.map((l: any) => ({
         leaseId: l.rentalAgreement.leaseId,
         propertyName: l.rentalAgreement.propertyName,
         flatNumber: l.rentalAgreement.flatNumber,
@@ -84,9 +68,10 @@ export default function PaymentsPage() {
       const paymentsData: Record<string, PaymentData[]> = {}
       for (const lease of leases) {
         const paymentRes = await apiClient.getMyPayments(lease.leaseId)
-        paymentsData[lease.leaseId] = paymentRes.data || []
+        paymentsData[lease.leaseId] = paymentRes.data.receipts || []
       }
       setPaymentsMap(paymentsData)
+      console.log("Payments Map:", paymentsData)
     } catch (err) {
       console.error("Failed to load leases/payments", err)
     } finally {
@@ -160,7 +145,7 @@ export default function PaymentsPage() {
                         {payment.chequeNumber && <p className="text-sm text-gray-500">Cheque: {payment.chequeNumber}</p>}
                       </div>
                       <div className="text-right">
-                        <p className="text-lg font-bold text-gray-900">{formatCurrency(payment.amount, payment.currency)}</p>
+                        <p className="text-lg font-bold text-gray-900">{formatCurrency(payment.totalAmount, payment.currency)}</p>
                         <Badge className={getStatusColor(payment.receiptStatus)}>{payment.receiptStatus}</Badge>
                       </div>
                     </div>

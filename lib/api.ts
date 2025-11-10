@@ -1,4 +1,4 @@
-import type { ApiResponse, DocumentItem, HouseholdMember } from "./types/api-responses"
+import type { ApiResponse, DocumentItem, HouseholdMember, PaginatedLeasesResponse, PaginatedPaymentResponse, PaginatedRefundResponse } from "./types/api-responses"
 import type {
   LoginResponse,
   TenantDetailsResponse,
@@ -143,6 +143,8 @@ class ApiClient {
     })
   }
 
+
+
   async logout() {
     try {
       await this.request("/auth/logout", { method: "POST" })
@@ -158,29 +160,43 @@ class ApiClient {
     })
   }
 
+    async validatePasswordResetToken(token: string) {
+    return this.request<{ message: string }>("/auth/validate-reset-token", {
+      method: "POST",
+      body: JSON.stringify({ token }),
+    })
+  }
+
+  async resetPassword(token: string, password: string) {
+    return this.request("/auth/change-password", {
+      method: "POST",
+      body: JSON.stringify({ token: token, newPassword: password }),
+    })
+  }
+
   // Tenant endpoints
   async getTenantDetails() {
     return this.request<TenantDetailsResponse>("/tenants/my-details")
   }
 
   async getMyLeases() {
-    return this.request<LeaseDetailsResponse[]>("/tenants/my-leases")
+    return this.request<PaginatedLeasesResponse>("/tenants/my-leases?page=0&pageSize=100")
   }
 
   async getMyRefunds(leaseId: string) {
-    return this.request<RefundResponse[]>("/tenants/my-refunds?leaseId=" + leaseId)
+    return this.request<PaginatedRefundResponse>("/tenants/my-refunds?page=0&pageSize=100&leaseId=" + leaseId)
   }
  async getMyDocuments() {
     return this.request<DocumentItem[]>("/documents")
   }
   // Payment endpoints
   async getMyPayments(leaseId: string) {
-    return this.request<PaymentResponse[]>("/tenants/my-payments?leaseId=" + leaseId)
+    return this.request<PaginatedPaymentResponse>("/tenants/my-payments?page=0&pageSize=100&leaseId=" + leaseId)
   }
 
   // Work Orders endpoints
   async getWorkOrders() {
-    return this.request<WorkOrderResponse[]>("/tenants/my-work-orders")
+    return this.request<WorkOrderResponse[]>("/tenants/my-work-orders?page=0&pageSize=100")
   }
 
    async updateTenantProfile(data: UpdateProfileRequest): Promise<ApiResponse<TenantDetailsResponse>> {

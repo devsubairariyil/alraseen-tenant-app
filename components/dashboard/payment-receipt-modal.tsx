@@ -17,7 +17,7 @@ interface PaymentReceiptModalProps {
     flatNumber: string
     tenantName: string
     staffName: string
-    amount: number
+    totalAmount: number
     currency: string
     method: string
     paymentReason: string
@@ -153,7 +153,7 @@ export default function PaymentReceiptModal({ isOpen, onClose, payment }: Paymen
       addReceiptLine("Property Name:", payment.propertyName)
       addReceiptLine("Flat Number:", payment.flatNumber)
       addReceiptLine("Processed By:", payment.staffName)
-      addReceiptLine("Amount:", formatCurrency(payment.amount, payment.currency), true)
+      addReceiptLine("Amount:", formatCurrency(payment.totalAmount, payment.currency), true)
       addReceiptLine("Received For:", payment.paymentReason)
       addReceiptLine("Reference:", payment.referenceNumber || "N/A")
       addReceiptLine("Payment Method:", payment.method.replace("_", " "))
@@ -189,7 +189,7 @@ Tenant Name: ${payment.tenantName}
 Property Name: ${payment.propertyName}
 Flat Number: ${payment.flatNumber}
 Processed By: ${payment.staffName}
-Amount: ${formatCurrency(payment.amount, payment.currency)}
+Amount: ${formatCurrency(payment.totalAmount, payment.currency)}
 Received For: ${payment.paymentReason}
 Reference: ${payment.referenceNumber || "N/A"}
 Payment Method: ${payment.method.replace("_", " ")}
@@ -266,7 +266,7 @@ For any queries, please contact Alraseen Real Estate.
             <div className="flex justify-between py-2">
               <span className="text-gray-600 font-medium">Amount:</span>
               <span className="text-blue-600 font-bold text-lg">
-                {formatCurrency(payment.amount, payment.currency)}
+                {formatCurrency(payment.totalAmount, payment.currency)}
               </span>
             </div>
 

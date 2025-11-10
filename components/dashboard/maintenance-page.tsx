@@ -152,17 +152,17 @@ export default function MaintenancePage() {
       ])
 
       setWorkOrders(workOrdersResponse.data || [])
-      setLeases(leasesResponse.data || [])
+      setLeases(leasesResponse.data.leases || [])
 
       // Set default property/unit if there's an active lease
-      const activeLeases = leasesResponse.data?.filter((lease) => lease.rentalAgreement.leaseStatus === "ACTIVE") || []
+      const activeLeases = leasesResponse.data.leases?.filter((lease) => lease.rentalAgreement.leaseStatus === "ACTIVE") || []
       setActiveLeases(activeLeases)
 
       if (activeLeases.length > 0) {
         setFormData((prev) => ({
           ...prev,
           propertyId: activeLeases[0].rentalAgreement.propertyId || "",
-          unitId: activeLeases[0].rentalAgreement.unitId || activeLeases[0].rentalAgreement.flatId || "",
+          unitId: activeLeases[0].rentalAgreement.flatId || activeLeases[0].rentalAgreement.flatId || "",
         }))
       }
     } catch (err) {
@@ -427,7 +427,7 @@ export default function MaintenancePage() {
                       {activeLeases.map((lease) => (
                         <SelectItem
                           key={lease.rentalAgreement.leaseId}
-                          value={`${lease.rentalAgreement.propertyId}-${lease.rentalAgreement.unitId || lease.rentalAgreement.flatId}`}
+                          value={`${lease.rentalAgreement.propertyId}-${lease.rentalAgreement.flatId || lease.rentalAgreement.flatId}`}
                         >
                           {lease.rentalAgreement.propertyName} - Unit {lease.rentalAgreement.flatNumber}
                         </SelectItem>
@@ -670,11 +670,11 @@ export default function MaintenancePage() {
                 const hasBeforeImages = workOrder.beforeImages && workOrder.beforeImages.length > 0
                 const hasAfterImages = workOrder.afterImages && workOrder.afterImages.length > 0
                 const isPending = workOrder.workOrderStatus?.toUpperCase() === "PENDING"
-                const isCancelling = cancellingWorkOrder === workOrder.workOrderId
+                const isCancelling = cancellingWorkOrder === workOrder.id
 
                 return (
                   <div
-                    key={workOrder.workOrderId || Math.random()}
+                    key={workOrder.id || Math.random()}
                     className="border border-gray-200 rounded-xl p-4 md:p-6 hover:shadow-lg transition-shadow"
                   >
                     <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4 mb-4">

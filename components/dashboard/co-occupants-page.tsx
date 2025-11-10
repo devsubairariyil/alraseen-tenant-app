@@ -174,7 +174,7 @@ export default function CoOccupantsPage() {
       setLoading(true)
       setError("")
       const response = await apiClient.getMyLeases()
-      setLeases(response.data || [])
+      setLeases(response.data.leases || [])
     } catch (err) {
       setError("Failed to load data")
       console.error("Error fetching data:", err)

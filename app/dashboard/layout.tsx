@@ -35,6 +35,7 @@ const sidebarItems = [
   { id: "payments", label: "Payments", icon: CreditCard, href: "/dashboard/payments" },
   { id: "refunds", label: "Refunds", icon: RefreshCw, href: "/dashboard/refunds" },
   { id: "requests", label: "Requests", icon: Layers, href: "/dashboard/requests" },
+
 ]
 
 function AppSidebar() {

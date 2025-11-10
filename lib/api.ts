@@ -184,6 +184,38 @@ class ApiClient {
   async getMyRefunds(leaseId: string) {
     return this.request<PaginatedRefundResponse>("/tenants/my-refunds?page=0&pageSize=100&leaseId=" + leaseId)
   }
+
+  async downloadRefundReceipt(expenseId: string): Promise<Blob> {
+    const url = `${this.baseURL}/expenses/receipt?expenseId=${expenseId}`
+    const headers: Record<string, string> = {}
+
+    if (this.token) {
+      headers.Authorization = `Bearer ${this.token}`
+    }
+
+    try {
+      const response = await fetch(url, {
+        method: "GET",
+        headers,
+      })
+
+      if (response.status === 401) {
+        this.handleUnauthorized()
+        throw new Error("Unauthorized - Please login again")
+      }
+
+      if (!response.ok) {
+        throw new Error(`Download failed: ${response.status}`)
+      }
+
+      return response.blob()
+    } catch (error) {
+      if (error instanceof Error && error.message.includes("401")) {
+        this.handleUnauthorized()
+      }
+      throw error
+    }
+  }
  async getMyDocuments() {
     return this.request<DocumentItem[]>("/documents")
   }

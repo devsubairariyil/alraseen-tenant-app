@@ -344,7 +344,7 @@ export default function MaintenancePage() {
   }
 
   const calculateSummary = () => {
-    if (!workOrders || workOrders.length === 0) {
+    if (!workOrders || !Array.isArray(workOrders) || workOrders.length === 0) {
       return {
         totalRequests: 0,
         openRequests: 0,
@@ -354,9 +354,9 @@ export default function MaintenancePage() {
 
     const totalRequests = workOrders.length
     const openRequests = workOrders.filter(
-      (wo) => wo && !["COMPLETED", "CANCELLED"].includes(wo.workOrderStatus?.toUpperCase() || ""),
+      (wo) => !["COMPLETED", "CANCELLED"].includes(wo.workOrderStatus?.toUpperCase() || ""),
     ).length
-    const completedRequests = workOrders.filter((wo) => wo && wo.workOrderStatus?.toUpperCase() === "COMPLETED").length
+    const completedRequests = workOrders.filter((wo) => wo.workOrderStatus?.toUpperCase() === "COMPLETED").length
 
     return {
       totalRequests,
@@ -650,7 +650,7 @@ export default function MaintenancePage() {
                 Try Again
               </Button>
             </div>
-          ) : workOrders.length === 0 ? (
+          ) : !Array.isArray(workOrders) || workOrders.length === 0 ? (
             <div className="text-center py-12">
               <Wrench className="w-12 h-12 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-semibold text-gray-900 mb-2">No Requests</h3>

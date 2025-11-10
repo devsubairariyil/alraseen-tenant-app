@@ -3,8 +3,6 @@ import type {
   LoginResponse,
   TenantDetailsResponse,
   LeaseDetailsResponse,
-  PaymentResponse,
-  RefundResponse,
   WorkOrderResponse,
   FileUploadResponse,
 } from "./types/api-responses"
@@ -58,9 +56,9 @@ class ApiClient {
 
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<ApiResponse<T>> {
     const url = `${this.baseURL}${endpoint}`
-    const headers: HeadersInit = {
+    const headers: Record<string, string> = {
       "Content-Type": "application/json",
-      ...options.headers,
+      ...(options.headers as Record<string, string>),
     }
 
     if (this.token) {
@@ -192,6 +190,38 @@ class ApiClient {
   // Payment endpoints
   async getMyPayments(leaseId: string) {
     return this.request<PaginatedPaymentResponse>("/tenants/my-payments?page=0&pageSize=100&leaseId=" + leaseId)
+  }
+
+  async downloadPaymentReceipt(receiptId: string): Promise<Blob> {
+    const url = `${this.baseURL}/collections/receipt?receiptId=${receiptId}`
+    const headers: Record<string, string> = {}
+
+    if (this.token) {
+      headers.Authorization = `Bearer ${this.token}`
+    }
+
+    try {
+      const response = await fetch(url, {
+        method: "GET",
+        headers,
+      })
+
+      if (response.status === 401) {
+        this.handleUnauthorized()
+        throw new Error("Unauthorized - Please login again")
+      }
+
+      if (!response.ok) {
+        throw new Error(`Download failed: ${response.status}`)
+      }
+
+      return response.blob()
+    } catch (error) {
+      if (error instanceof Error && error.message.includes("401")) {
+        this.handleUnauthorized()
+      }
+      throw error
+    }
   }
 
   // Work Orders endpoints

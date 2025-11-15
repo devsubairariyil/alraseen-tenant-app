@@ -85,13 +85,17 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
     // Check Emirates ID
     const isEmiratesIdMissing = !data.tenantItem.emiratesIdNo || !data.tenantItem.emiratesIdExpiry
     const isEmiratesIdExpired = data.tenantItem.emiratesIdExpiryStatus === "EXPIRED"
+    // API returns documentPath, not emiratesIdDocument
+    const isEmiratesIdDocumentMissing = !data.tenantItem.documentPath || data.tenantItem.documentPath.trim() === ""
     
-    if (isEmiratesIdMissing || isEmiratesIdExpired) {
+    if (isEmiratesIdMissing || isEmiratesIdExpired || isEmiratesIdDocumentMissing) {
       steps.push({
         id: "emirates-id",
         title: "Emirates ID",
         description: isEmiratesIdExpired 
           ? "Your Emirates ID has expired. Please update it." 
+          : isEmiratesIdDocumentMissing
+          ? "Please upload your Emirates ID document"
           : "Please provide your Emirates ID details",
         completed: false,
         required: true,

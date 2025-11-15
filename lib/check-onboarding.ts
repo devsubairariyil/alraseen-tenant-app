@@ -13,6 +13,8 @@ export function checkOnboardingRequired(tenantData: TenantDetailsResponse | null
   // Check Emirates ID
   const isEmiratesIdMissing = !tenantData.tenantItem.emiratesIdNo || !tenantData.tenantItem.emiratesIdExpiry
   const isEmiratesIdExpired = tenantData.tenantItem.emiratesIdExpiryStatus === "EXPIRED"
+  // API returns documentPath, not emiratesIdDocument
+  const isEmiratesIdDocumentMissing = !tenantData.tenantItem.documentPath || tenantData.tenantItem.documentPath.trim() === ""
 
   // Check Emergency Contacts - field might be undefined or empty array
   const hasEmergencyContacts = 
@@ -24,18 +26,20 @@ export function checkOnboardingRequired(tenantData: TenantDetailsResponse | null
   const householdSize = (tenantData.houseHoldMembers?.length || 0) + 1 // +1 for the tenant themselves
 
   const needsOnboarding =
-    (isEmiratesIdMissing || isEmiratesIdExpired) ||
+    (isEmiratesIdMissing || isEmiratesIdExpired || isEmiratesIdDocumentMissing) ||
     !hasEmergencyContacts ||
     (leaseOccupants > 1 && householdSize < leaseOccupants)
 
   console.log("Onboarding Check Details:", {
     emiratesIdNo: tenantData.tenantItem.emiratesIdNo,
     emiratesIdExpiry: tenantData.tenantItem.emiratesIdExpiry,
+    documentPath: tenantData.tenantItem.documentPath,
     emiratesIdStatus: tenantData.tenantItem.emiratesIdExpiryStatus,
     emergencyContact: tenantData.emergencyContact,
     houseHoldMembers: tenantData.houseHoldMembers,
     isEmiratesIdMissing,
     isEmiratesIdExpired,
+    isEmiratesIdDocumentMissing,
     hasEmergencyContacts,
     leaseOccupants,
     householdSize,

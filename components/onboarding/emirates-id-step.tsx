@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -11,10 +12,12 @@ import { format } from "date-fns"
 import { cn } from "@/lib/utils"
 import { apiClient } from "@/lib/api"
 import { useOnboarding } from "@/lib/onboarding-context"
+import { checkOnboardingRequired } from "@/lib/check-onboarding"
 import { toast } from "sonner"
 
 export function EmiratesIdStep() {
-  const { tenantData, markStepComplete, goToNextStep, refreshTenantData } = useOnboarding()
+  const router = useRouter()
+  const { tenantData, markStepComplete, goToNextStep, refreshTenantData, completeOnboarding } = useOnboarding()
   const [emiratesIdNo, setEmiratesIdNo] = useState(tenantData?.tenantItem.emiratesIdNo || "")
   const [emiratesIdExpiry, setEmiratesIdExpiry] = useState<Date | undefined>(
     tenantData?.tenantItem.emiratesIdExpiry ? new Date(tenantData.tenantItem.emiratesIdExpiry) : undefined
@@ -22,6 +25,9 @@ export function EmiratesIdStep() {
   const [file, setFile] = useState<File | null>(null)
   const [uploading, setUploading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+
+  const hasExistingDocument = tenantData?.tenantItem.emiratesIdDocument && 
+                               tenantData.tenantItem.emiratesIdDocument.trim() !== ""
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -37,6 +43,12 @@ export function EmiratesIdStep() {
       return
     }
 
+    // Check if document is required
+    if (!hasExistingDocument && !file) {
+      toast.error("Please upload your Emirates ID document")
+      return
+    }
+
     try {
       setSubmitting(true)
 
@@ -45,7 +57,7 @@ export function EmiratesIdStep() {
       // Upload file if provided
       if (file) {
         setUploading(true)
-        const uploadResponse = await apiClient.uploadFile(file, "EMIRATES_ID")
+        const uploadResponse = await apiClient.uploadFile(file, "ID_PROOF")
         documentPath = uploadResponse.data
         setUploading(false)
       }
@@ -58,9 +70,30 @@ export function EmiratesIdStep() {
       })
 
       toast.success("Emirates ID updated successfully!")
+      
+      // Refresh tenant data to get latest state
       await refreshTenantData()
+      
+      // Fetch fresh tenant data to check onboarding status
+      const freshTenantData = await apiClient.getTenantDetails()
+      
+      // Mark this step as complete
       markStepComplete("emirates-id")
-      goToNextStep()
+      
+      // Check if all onboarding is now complete
+      const needsMoreOnboarding = checkOnboardingRequired(freshTenantData.data)
+      
+      if (!needsMoreOnboarding) {
+        // All onboarding complete - go to dashboard
+        completeOnboarding()
+        toast.success("Onboarding completed! Redirecting to dashboard...")
+        setTimeout(() => {
+          router.push("/dashboard")
+        }, 500)
+      } else {
+        // More steps remaining - go to next step
+        goToNextStep()
+      }
     } catch (error) {
       console.error("Error updating Emirates ID:", error)
       toast.error("Failed to update Emirates ID. Please try again.")
@@ -80,6 +113,8 @@ export function EmiratesIdStep() {
         <p className="text-gray-600">
           {tenantData?.tenantItem.emiratesIdExpiryStatus === "EXPIRED"
             ? "Your Emirates ID has expired. Please update your information."
+            : !hasExistingDocument
+            ? "Please upload your Emirates ID document to continue."
             : "Please provide your Emirates ID details to continue."}
         </p>
       </div>
@@ -130,8 +165,17 @@ export function EmiratesIdStep() {
 
         <div className="space-y-2">
           <Label htmlFor="document" className="text-sm font-medium">
-            Upload Emirates ID Copy {!tenantData?.tenantItem.emiratesIdDocument && <span className="text-red-500">*</span>}
+            Upload Emirates ID Copy {!hasExistingDocument && <span className="text-red-500">*</span>}
           </Label>
+          {hasExistingDocument && (
+            <div className="mb-2 p-3 bg-green-50 border border-green-200 rounded-lg flex items-start gap-2">
+              <FileCheck className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm text-green-800 font-medium">Document Already Uploaded</p>
+                <p className="text-xs text-green-700">You can upload a new document to replace the existing one.</p>
+              </div>
+            </div>
+          )}
           <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
             <input
               type="file"
@@ -139,12 +183,11 @@ export function EmiratesIdStep() {
               accept="image/*,.pdf"
               onChange={handleFileChange}
               className="hidden"
-              required={!tenantData?.tenantItem.emiratesIdDocument}
             />
             <label htmlFor="document" className="cursor-pointer">
               <Upload className="w-8 h-8 mx-auto mb-2 text-gray-400" />
               <p className="text-sm text-gray-600">
-                {file ? file.name : "Click to upload or drag and drop"}
+                {file ? file.name : hasExistingDocument ? "Click to upload a new document" : "Click to upload or drag and drop"}
               </p>
               <p className="text-xs text-gray-500 mt-1">PNG, JPG or PDF (max. 10MB)</p>
             </label>

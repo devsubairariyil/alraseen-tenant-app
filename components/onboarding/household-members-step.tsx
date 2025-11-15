@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -16,6 +17,7 @@ import { apiClient } from "@/lib/api"
 import { useOnboarding } from "@/lib/onboarding-context"
 import { toast } from "sonner"
 import type { CreateHouseholdMemberRequest } from "@/lib/types/api-requests"
+import { checkOnboardingRequired } from "@/lib/check-onboarding"
 
 const relationships = [
   "Spouse",
@@ -47,7 +49,8 @@ const nationalities = [
 ]
 
 export function HouseholdMembersStep() {
-  const { tenantData, markStepComplete, goToNextStep, refreshTenantData } = useOnboarding()
+  const router = useRouter()
+  const { tenantData, markStepComplete, goToNextStep, refreshTenantData, completeOnboarding } = useOnboarding()
   const [submitting, setSubmitting] = useState(false)
   const [showForm, setShowForm] = useState(true)
   const [emiratesIdExpiry, setEmiratesIdExpiry] = useState<Date | undefined>()
@@ -123,9 +126,19 @@ export function HouseholdMembersStep() {
     }
   }
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     markStepComplete("household-members")
-    goToNextStep()
+    
+    // Fetch fresh tenant data to check if onboarding is complete
+    const freshTenantData = await apiClient.getTenantDetails()
+    const needsMoreOnboarding = checkOnboardingRequired(freshTenantData.data)
+    
+    if (!needsMoreOnboarding) {
+      completeOnboarding()
+      router.push("/dashboard")
+    } else {
+      goToNextStep()
+    }
   }
 
   return (

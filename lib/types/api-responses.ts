@@ -71,12 +71,13 @@ export interface TenantItem {
   primaryEmail: string
   primaryMobile: string
   profileImage?: string
+  documentPath?: string // Emirates ID document path
   hasParking: boolean
   leaseStartDate: string
   leaseEndDate: string
   leaseStatus: string
   emiratesIdExpiryStatus: string
-  emiratesIdDocument?: string
+  emiratesIdDocument?: string // Legacy field, API now uses documentPath
   createdAt?: string
   updatedAt?: string
 }

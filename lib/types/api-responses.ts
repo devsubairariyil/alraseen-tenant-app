@@ -228,8 +228,10 @@ export interface PaginatedRefundResponse {
 // Work Order Response Types
 export interface WorkOrderResponse {
   id: string
+  workOrderNumber?: string
   title: string
   requestedByUserId: string
+  requestUserName?: string
   requesterType: string
   propertyId: string
   unitId: string
@@ -238,19 +240,35 @@ export interface WorkOrderResponse {
   description: string
   workOrderStatus: string
   priority: string
-  assignedToUserId: string
+  assignedToUserId?: string
   requiresLandlordApproval: boolean
   landlordApprovalStatus: string
-  approvedByLandlordId: string
-  landlordRemarks: string
+  approvedByLandlordId?: string
+  landlordRemarks?: string
   beforeImages: string[]
   afterImages: string[]
-  remarks: string
+  remarks?: string
   createdAt: string
-  updatedAt: string
+  updatedAt?: string
   propertyName?: string
   flatNumber?: string
   assignedToName?: string
+}
+
+export interface WorkOrderStatusSummary {
+  status: string
+  total: number
+}
+
+export interface PaginatedWorkOrderResponse {
+  workOrders: WorkOrderResponse[]
+  workOrderStatus: WorkOrderStatusSummary[]
+  pagination: {
+    currentPage: number
+    pageSize: number
+    totalItems: number
+    totalPages: number
+  }
 }
 
 // File Upload Response Types

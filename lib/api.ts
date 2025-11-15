@@ -1,4 +1,4 @@
-import type { ApiResponse, DocumentItem, HouseholdMember, PaginatedLeasesResponse, PaginatedPaymentResponse, PaginatedRefundResponse } from "./types/api-responses"
+import type { ApiResponse, DocumentItem, HouseholdMember, PaginatedLeasesResponse, PaginatedPaymentResponse, PaginatedRefundResponse, PaginatedWorkOrderResponse } from "./types/api-responses"
 import type {
   LoginResponse,
   TenantDetailsResponse,
@@ -259,7 +259,7 @@ class ApiClient {
 
   // Work Orders endpoints
   async getWorkOrders() {
-    return this.request<WorkOrderResponse[]>("/tenants/my-work-orders?page=0&pageSize=100")
+    return this.request<PaginatedWorkOrderResponse>("/tenants/my-work-orders?page=0&pageSize=100")
   }
 
    async updateTenantProfile(data: UpdateProfileRequest): Promise<ApiResponse<TenantDetailsResponse>> {
@@ -307,6 +307,10 @@ class ApiClient {
 
 
   // Household Members
+  async getHouseholdMembers(leaseId: string) {
+    return this.request<HouseholdMember[]>(`/tenants/household-members?leaseId=${leaseId}`)
+  }
+
   async createHouseholdMember(request: CreateHouseholdMemberRequest) {
     return this.request<{ memberId: string }>("/tenants/household-members", {
       method: "POST",

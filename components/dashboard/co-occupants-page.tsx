@@ -116,6 +116,8 @@ const getFileType = (url: string): "pdf" | "image" | "unknown" => {
 
 export default function CoOccupantsPage() {
   const [leases, setLeases] = useState<LeaseDetailsResponse[]>([])
+  const [householdMembers, setHouseholdMembers] = useState<HouseholdMember[]>([])
+  const [activeLeaseId, setActiveLeaseId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
@@ -169,17 +171,48 @@ export default function CoOccupantsPage() {
     fetchData()
   }, [])
 
+  useEffect(() => {
+    // Fetch household members when active lease is set
+    if (activeLeaseId) {
+      fetchHouseholdMembers()
+    }
+  }, [activeLeaseId])
+
   const fetchData = async () => {
     try {
       setLoading(true)
       setError("")
       const response = await apiClient.getMyLeases()
-      setLeases(response.data.leases || [])
+      const fetchedLeases = response.data.leases || []
+      setLeases(fetchedLeases)
+      
+      // Set the first active lease as default
+      if (fetchedLeases.length > 0) {
+        const activeLease = fetchedLeases.find(lease => lease.rentalAgreement.leaseStatus === 'ACTIVE')
+        if (activeLease) {
+          setActiveLeaseId(activeLease.rentalAgreement.leaseId)
+        } else {
+          // If no active lease, use the first one
+          setActiveLeaseId(fetchedLeases[0].rentalAgreement.leaseId)
+        }
+      }
     } catch (err) {
       setError("Failed to load data")
       console.error("Error fetching data:", err)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchHouseholdMembers = async () => {
+    if (!activeLeaseId) return
+    
+    try {
+      const response = await apiClient.getHouseholdMembers(activeLeaseId)
+      setHouseholdMembers(response.data || [])
+    } catch (err) {
+      console.error("Error fetching household members:", err)
+      setHouseholdMembers([])
     }
   }
 
@@ -217,7 +250,7 @@ export default function CoOccupantsPage() {
       setIsCreateDialogOpen(false)
 
       // Refresh data
-      await fetchData()
+      await fetchHouseholdMembers()
     } catch (err) {
       console.error("Error creating household member:", err)
     } finally {
@@ -237,7 +270,7 @@ export default function CoOccupantsPage() {
       setIsEditDialogOpen(false)
       setEditingMember(null)
       setEditFormData({})
-      await fetchData()
+      await fetchHouseholdMembers()
     } catch (err) {
       console.error("Error updating household member:", err)
     } finally {
@@ -263,7 +296,7 @@ export default function CoOccupantsPage() {
         status: "LEFT",
         leavingDate: today,
       })
-      await fetchData()
+      await fetchHouseholdMembers()
       setConfirmationDialog({ isOpen: false, member: null, isProcessing: false })
     } catch (err) {
       console.error("Error marking member as left:", err)
@@ -331,7 +364,7 @@ export default function CoOccupantsPage() {
           await apiClient.updateHouseholdMember(memberId, {
             documentPath: referenceId,
           })
-          await fetchData()
+          await fetchHouseholdMembers()
         } else {
           // Set for new member form
           setFormData((prev) => ({ ...prev, documentPath: referenceId }))
@@ -371,13 +404,14 @@ export default function CoOccupantsPage() {
   const getAllHouseholdMembers = () => {
     const allMembers: (HouseholdMember & { propertyName?: string; flatNumber?: string })[] = []
 
-    leases.forEach((lease) => {
-      lease.houseHoldMembers?.forEach((member) => {
-        allMembers.push({
-          ...member,
-          propertyName: lease.rentalAgreement.propertyName,
-          flatNumber: lease.rentalAgreement.flatNumber,
-        })
+    // Add property information to household members
+    const currentLease = leases.find(lease => lease.rentalAgreement.leaseId === activeLeaseId)
+    
+    householdMembers.forEach((member) => {
+      allMembers.push({
+        ...member,
+        propertyName: currentLease?.rentalAgreement.propertyName,
+        flatNumber: currentLease?.rentalAgreement.flatNumber,
       })
     })
 
@@ -411,6 +445,30 @@ export default function CoOccupantsPage() {
         <div>
           <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">Co-Occupants</h2>
           <p className="text-gray-600 text-sm md:text-base">Manage household members and co-occupants</p>
+          {activeLeaseId && leases.length > 0 && (
+            <div className="mt-2">
+              {leases.length > 1 ? (
+                <Select value={activeLeaseId} onValueChange={setActiveLeaseId}>
+                  <SelectTrigger className="w-full sm:w-96">
+                    <SelectValue placeholder="Select a property" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {leases.map((lease) => (
+                      <SelectItem key={lease.rentalAgreement.leaseId} value={lease.rentalAgreement.leaseId}>
+                        {lease.rentalAgreement.propertyName} - Unit {lease.rentalAgreement.flatNumber} (
+                        {new Date(lease.rentalAgreement.leaseStartDate).toLocaleDateString()} - {new Date(lease.rentalAgreement.leaseEndDate).toLocaleDateString()})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Badge variant="outline" className="text-sm">
+                  {leases[0].rentalAgreement.propertyName} - Unit {leases[0].rentalAgreement.flatNumber} (
+                  {new Date(leases[0].rentalAgreement.leaseStartDate).toLocaleDateString()} - {new Date(leases[0].rentalAgreement.leaseEndDate).toLocaleDateString()})
+                </Badge>
+              )}
+            </div>
+          )}
         </div>
         <div className="flex gap-2">
           <Button onClick={fetchData} variant="outline" size="sm">

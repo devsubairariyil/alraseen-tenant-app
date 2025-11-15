@@ -114,6 +114,7 @@ export default function MaintenancePage() {
   const [error, setError] = useState("")
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState("")
   const [uploadedImages, setUploadedImages] = useState<string[]>([])
   const [cancellingWorkOrder, setCancellingWorkOrder] = useState<string | null>(null)
 
@@ -151,7 +152,7 @@ export default function MaintenancePage() {
         apiClient.getMyLeases(),
       ])
 
-      setWorkOrders(workOrdersResponse.data || [])
+      setWorkOrders(workOrdersResponse.data.workOrders || [])
       setLeases(leasesResponse.data.leases || [])
 
       // Set default property/unit if there's an active lease
@@ -178,7 +179,7 @@ export default function MaintenancePage() {
       setLoading(true)
       setError("")
       const response = await apiClient.getWorkOrders()
-      setWorkOrders(response.data || [])
+      setWorkOrders(response.data.workOrders || [])
     } catch (err) {
       setError("Failed to load work orders")
       console.error("Error fetching work orders:", err)
@@ -192,6 +193,7 @@ export default function MaintenancePage() {
     if (!files || files.length === 0) return
 
     try {
+      setSubmitError("") // Clear any previous errors
       const uploadPromises = Array.from(files).map(async (file) => {
         try {
           const response = await apiClient.uploadFile(file, "IMAGE")
@@ -208,8 +210,13 @@ export default function MaintenancePage() {
       if (validImageIds.length > 0) {
         setUploadedImages((prev) => [...(prev || []), ...validImageIds])
       }
+
+      if (validImageIds.length < files.length) {
+        setSubmitError("Some images failed to upload. Please try again.")
+      }
     } catch (err) {
       console.error("Error uploading images:", err)
+      setSubmitError("Failed to upload images. Please try again.")
     }
   }
 
@@ -219,13 +226,25 @@ export default function MaintenancePage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setSubmitError("") // Clear any previous errors
+
     if (!user?.userId) {
-      console.error("User ID not available")
+      setSubmitError("User information not available. Please try logging in again.")
       return
     }
 
     if (!formData.propertyId || !formData.unitId) {
-      console.error("Property ID and Unit ID are required")
+      setSubmitError("Please select a property and unit.")
+      return
+    }
+
+    if (!formData.title?.trim()) {
+      setSubmitError("Please provide a title for your request.")
+      return
+    }
+
+    if (!formData.description?.trim()) {
+      setSubmitError("Please provide a description of the issue.")
       return
     }
 
@@ -233,20 +252,20 @@ export default function MaintenancePage() {
       setIsSubmitting(true)
 
       const workOrderData = {
-        title: formData.title || "Untitled Request",
+        title: formData.title.trim(),
         requestedByUserId: user.userId,
         requesterType: "TENANT" as const,
         propertyId: formData.propertyId,
         unitId: formData.unitId,
         category: formData.category || "GENERAL",
         subcategory: formData.subcategory || "",
-        description: formData.description || "",
+        description: formData.description.trim(),
         workOrderStatus: "PENDING" as const,
         priority: formData.priority || "MEDIUM",
-        requiresLandlordApproval: false, // Always false for tenant requests
+        requiresLandlordApproval: false,
         landlordApprovalStatus: "PENDING" as const,
         beforeImages: uploadedImages || [],
-        remarks: formData.remarks || "",
+        remarks: formData.remarks?.trim() || "",
       }
 
       await apiClient.createWorkOrder(workOrderData)
@@ -263,12 +282,15 @@ export default function MaintenancePage() {
         remarks: "",
       })
       setUploadedImages([])
+      setSubmitError("")
       setIsCreateDialogOpen(false)
 
       // Refresh work orders
       await fetchWorkOrders()
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error creating work order:", err)
+      const errorMessage = err?.message || "Failed to create request. Please try again."
+      setSubmitError(errorMessage)
     } finally {
       setIsSubmitting(false)
     }
@@ -281,8 +303,13 @@ export default function MaintenancePage() {
 
       // Refresh work orders to show updated status
       await fetchWorkOrders()
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error cancelling work order:", err)
+      const errorMessage = err?.message || "Failed to cancel request. Please try again."
+      setError(errorMessage)
+      
+      // Clear error after 5 seconds
+      setTimeout(() => setError(""), 5000)
     } finally {
       setCancellingWorkOrder(null)
     }
@@ -410,6 +437,17 @@ export default function MaintenancePage() {
               <DialogHeader>
                 <DialogTitle>Create Request</DialogTitle>
               </DialogHeader>
+              
+              {submitError && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
+                  <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <h4 className="text-sm font-semibold text-red-800">Error</h4>
+                    <p className="text-sm text-red-700">{submitError}</p>
+                  </div>
+                </div>
+              )}
+              
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                   <Label htmlFor="property">Property</Label>
@@ -570,11 +608,29 @@ export default function MaintenancePage() {
                 </div>
 
                 <div className="flex justify-end gap-2 pt-4">
-                  <Button type="button" variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => {
+                      setIsCreateDialogOpen(false)
+                      setSubmitError("")
+                    }}
+                    disabled={isSubmitting}
+                  >
                     Cancel
                   </Button>
                   <Button type="submit" disabled={isSubmitting}>
-                    {isSubmitting ? "Creating..." : "Create Request"}
+                    {isSubmitting ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                        Creating Request...
+                      </>
+                    ) : (
+                      <>
+                        <Plus className="w-4 h-4 mr-2" />
+                        Create Request
+                      </>
+                    )}
                   </Button>
                 </div>
               </form>

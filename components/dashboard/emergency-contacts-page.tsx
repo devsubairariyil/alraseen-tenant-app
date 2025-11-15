@@ -99,7 +99,7 @@ export default function EmergencyContactsPage() {
     try {
       setLoading(true)
       const response = await apiClient.getTenantDetails()
-      setPersonalContacts(response.data.emergencyContacts || [])
+      setPersonalContacts(response.data.emergencyContact || [])
     } catch (err) {
       setError("Failed to load emergency contacts")
       console.error("Error fetching emergency contacts:", err)

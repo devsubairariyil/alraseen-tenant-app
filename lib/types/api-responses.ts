@@ -121,7 +121,7 @@ export interface TenantDetailsResponse {
   tenantItem: TenantItem
   activeLease: ActiveLease
   parkingList: ParkingItem[]
-  emergencyContacts?: EmergencyContact[]
+  emergencyContact?: EmergencyContact[]
   houseHoldMembers?: HouseholdMember[]
 }
 

@@ -44,7 +44,7 @@ export default function LoginForm() {
     propertyName: string
   } | null>(null)
 
-  const { login } = useAuth()
+  const { login, setUserData } = useAuth()
   const router = useRouter()
 
   // Check for rental interest success message on component mount
@@ -123,9 +123,15 @@ export default function LoginForm() {
 
       const response = await apiClient.verifyOtp({ email, otp })
       if (response.data.accessToken) {
-        // Store user data
-        localStorage.setItem("userData", JSON.stringify(response.data))
+        // Store user data in auth context and persist token
         apiClient.setToken(response.data.accessToken)
+        setUserData({
+          userId: response.data.userId,
+          email: response.data.email,
+          firstName: response.data.firstName,
+          lastName: response.data.lastName,
+          role: response.data.role,
+        })
         
         // Check if onboarding is required
         try {

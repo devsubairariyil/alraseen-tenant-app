@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react"
 import { apiClient } from "./api"
+import { checkOnboardingRequired } from "./check-onboarding"
 import type { TenantDetailsResponse } from "./types/api-responses"
 
 interface OnboardingStep {
@@ -68,6 +69,16 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
     }
   }, [tenantData])
 
+  useEffect(() => {
+    if (steps.length === 0) {
+      setCurrentStepIndex(0)
+      return
+    }
+    if (currentStepIndex >= steps.length) {
+      setCurrentStepIndex(steps.length - 1)
+    }
+  }, [steps, currentStepIndex])
+
   const determineRequiredSteps = (data: TenantDetailsResponse): OnboardingStep[] => {
     const steps: OnboardingStep[] = []
 
@@ -88,7 +99,13 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
     }
 
     // Check Emergency Contacts
-    const hasEmergencyContacts = data.emergencyContacts && data.emergencyContacts.length > 0
+    const hasEmergencyContacts = data.emergencyContact && data.emergencyContact.length > 0
+    console.log("Emergency Contacts Check:", {
+      emergencyContact: data.emergencyContact,
+      length: data.emergencyContact?.length,
+      hasEmergencyContacts
+    })
+    
     if (!hasEmergencyContacts) {
       steps.push({
         id: "emergency-contacts",
@@ -117,8 +134,9 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
     return steps
   }
 
-  // Only consider onboarding complete if we've loaded data and there are either no steps or all steps are completed
-  const isOnboardingComplete = !loading && tenantData !== null && (steps.length === 0 || steps.every(step => step.completed))
+  // Only consider onboarding complete when server data indicates no pending requirements
+  const isOnboardingComplete =
+    !loading && tenantData !== null && !checkOnboardingRequired(tenantData)
 
   const goToNextStep = () => {
     if (currentStepIndex < steps.length - 1) {

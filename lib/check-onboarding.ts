@@ -10,22 +10,14 @@ export function checkOnboardingRequired(tenantData: TenantDetailsResponse | null
     return false
   }
 
-  // Check if onboarding was already completed
-  let onboardingCompleted = false
-  if (typeof window !== "undefined") {
-    const completed = localStorage.getItem("onboardingCompleted")
-    onboardingCompleted = completed === "true"
-    console.log("Onboarding Check: localStorage onboardingCompleted =", completed)
-  }
-
   // Check Emirates ID
   const isEmiratesIdMissing = !tenantData.tenantItem.emiratesIdNo || !tenantData.tenantItem.emiratesIdExpiry
   const isEmiratesIdExpired = tenantData.tenantItem.emiratesIdExpiryStatus === "EXPIRED"
 
   // Check Emergency Contacts - field might be undefined or empty array
   const hasEmergencyContacts = 
-    tenantData.emergencyContacts !== undefined && 
-    tenantData.emergencyContacts.length > 0
+    tenantData.emergencyContact !== undefined && 
+    tenantData.emergencyContact.length > 0
 
   // Check Household Members vs Lease Occupants
   const leaseOccupants = tenantData.activeLease?.numberOfOccupants || 0
@@ -40,7 +32,7 @@ export function checkOnboardingRequired(tenantData: TenantDetailsResponse | null
     emiratesIdNo: tenantData.tenantItem.emiratesIdNo,
     emiratesIdExpiry: tenantData.tenantItem.emiratesIdExpiry,
     emiratesIdStatus: tenantData.tenantItem.emiratesIdExpiryStatus,
-    emergencyContacts: tenantData.emergencyContacts,
+    emergencyContact: tenantData.emergencyContact,
     houseHoldMembers: tenantData.houseHoldMembers,
     isEmiratesIdMissing,
     isEmiratesIdExpired,
@@ -48,10 +40,7 @@ export function checkOnboardingRequired(tenantData: TenantDetailsResponse | null
     leaseOccupants,
     householdSize,
     needsOnboarding,
-    onboardingCompleted,
-    finalResult: needsOnboarding && !onboardingCompleted
   })
 
-  // Only skip onboarding if it was explicitly completed
-  return needsOnboarding && !onboardingCompleted
+  return needsOnboarding
 }

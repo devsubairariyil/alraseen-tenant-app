@@ -10,7 +10,6 @@ import { HouseholdMembersStep } from "@/components/onboarding/household-members-
 import { Progress } from "@/components/ui/progress"
 import { CheckCircle2, Circle } from "lucide-react"
 import { Toaster } from "@/components/ui/sonner"
-import { Button } from "@/components/ui/button"
 
 function OnboardingContent() {
   const router = useRouter()
@@ -36,11 +35,7 @@ function OnboardingContent() {
   }
 
   if (steps.length === 0) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-      </div>
-    )
+    return null
   }
 
   const currentStep = steps[currentStepIndex]

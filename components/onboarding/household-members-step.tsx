@@ -47,7 +47,6 @@ const nationalities = [
 export function HouseholdMembersStep() {
   const { tenantData, markStepComplete, goToNextStep, refreshTenantData } = useOnboarding()
   const [submitting, setSubmitting] = useState(false)
-  const [skipping, setSkipping] = useState(false)
   const [emiratesIdExpiry, setEmiratesIdExpiry] = useState<Date | undefined>()
   const [joiningDate, setJoiningDate] = useState<Date | undefined>(new Date())
   const [formData, setFormData] = useState<Omit<CreateHouseholdMemberRequest, "emiratesIdExpiry" | "joiningDate">>({
@@ -65,12 +64,6 @@ export function HouseholdMembersStep() {
 
   const handleChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
-  }
-
-  const handleSkip = () => {
-    setSkipping(true)
-    markStepComplete("household-members")
-    goToNextStep()
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -275,7 +268,7 @@ export function HouseholdMembersStep() {
           </div>
         </div>
 
-        <Button type="submit" className="w-full h-12 text-base font-semibold" disabled={submitting || skipping}>
+        <Button type="submit" className="w-full h-12 text-base font-semibold" disabled={submitting}>
           {submitting ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -284,16 +277,6 @@ export function HouseholdMembersStep() {
           ) : (
             "Add Household Member"
           )}
-        </Button>
-
-        <Button 
-          type="button" 
-          variant="outline" 
-          className="w-full h-12 text-base font-semibold" 
-          onClick={handleSkip}
-          disabled={submitting || skipping}
-        >
-          Skip for Now
         </Button>
       </form>
     </div>

@@ -17,6 +17,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>
   logout: () => Promise<void>
   loading: boolean
+  setUserData: (user: User) => void
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -24,6 +25,11 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
+
+  const setUserData = (userData: User) => {
+    setUser(userData)
+    localStorage.setItem("userData", JSON.stringify(userData))
+  }
 
   useEffect(() => {
     // Check if user is logged in on mount
@@ -41,7 +47,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (email: string, password: string) => {
     try {
-      const response = await apiClient.login({email, password})
+      const response = await apiClient.login({ email, password })
       const userData = {
         userId: response.data.userId,
         email: response.data.email,
@@ -49,8 +55,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         lastName: response.data.lastName,
         role: response.data.role,
       }
-      setUser(userData)
-      localStorage.setItem("userData", JSON.stringify(userData))
+      setUserData(userData)
     } catch (error) {
       throw error
     }
@@ -67,7 +72,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  return <AuthContext.Provider value={{ user, login, logout, loading }}>{children}</AuthContext.Provider>
+  return <AuthContext.Provider value={{ user, login, logout, loading, setUserData }}>{children}</AuthContext.Provider>
 }
 
 export function useAuth() {

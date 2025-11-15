@@ -27,6 +27,7 @@ import {
   Trash2,
   Eye,
   Download,
+  Car,
 } from "lucide-react"
 import { apiClient } from "@/lib/api"
 import type { TenantDetailsResponse, EmergencyContact } from "@/lib/types/api-responses"
@@ -493,8 +494,8 @@ export default function TenantProfile() {
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            {tenantData.emergencyContacts && tenantData.emergencyContacts.length > 0 ? (
-              tenantData.emergencyContacts.map((contact) => (
+            {tenantData.emergencyContact && tenantData.emergencyContact.length > 0 ? (
+              tenantData.emergencyContact.map((contact) => (
                 <div key={contact.contactId} className="p-4 bg-gray-50 rounded-xl">
                   <div className="flex justify-between items-start mb-2">
                     <div className="flex-1">
@@ -554,6 +555,68 @@ export default function TenantProfile() {
                     </div>
                     <p className="text-sm text-gray-600 mb-1">Emirates ID: {member.emiratesIdNo}</p>
                     <p className="text-sm text-gray-600">Nationality: {member.nationality}</p>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Parking Information */}
+        {tenantData.parkingList && tenantData.parkingList.length > 0 && (
+          <Card className="border-0 shadow-xl bg-white/80 backdrop-blur-sm rounded-2xl overflow-hidden lg:col-span-2">
+            <CardHeader>
+              <CardTitle className="text-lg md:text-xl font-bold text-gray-900 flex items-center gap-2">
+                <Car className="w-5 h-5 text-blue-500" />
+                Parking Information
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {tenantData.parkingList.map((parking) => (
+                  <div key={parking.parkingId} className="p-4 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl border border-blue-100">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center">
+                          <Car className="w-5 h-5 text-white" />
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-gray-900">{parking.model}</h4>
+                          <p className="text-xs text-gray-600">Slot: {parking.slotNumber}</p>
+                        </div>
+                      </div>
+                      <Badge 
+                        className={`${
+                          parking.parkingStatus === 'ACTIVE' 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-gray-100 text-gray-800'
+                        }`}
+                      >
+                        {parking.parkingStatus}
+                      </Badge>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <p className="text-sm text-gray-600">Number Plate:</p>
+                        <p className="text-sm font-semibold text-gray-900 font-mono">{parking.numberPlate}</p>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <p className="text-sm text-gray-600">Parking Fee:</p>
+                        <p className="text-sm font-semibold text-gray-900">
+                          {parking.includedInRent ? (
+                            <Badge variant="secondary" className="text-xs">Included in Rent</Badge>
+                          ) : (
+                            `${parking.currency} ${parking.parkingFee.toLocaleString()}`
+                          )}
+                        </p>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <p className="text-sm text-gray-600">Period:</p>
+                        <p className="text-sm font-medium text-gray-900">
+                          {new Date(parking.parkingStartDate).toLocaleDateString()} - {new Date(parking.parkingEndDate).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 ))}
               </div>

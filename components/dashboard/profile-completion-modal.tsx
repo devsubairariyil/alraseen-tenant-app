@@ -48,7 +48,7 @@ export default function ProfileCompletionModal({ tenantData, onComplete }: Profi
     : false
 
   // Check if emergency contacts are missing
-  const hasNoEmergencyContacts = !tenantData?.emergencyContacts || tenantData.emergencyContacts.length === 0
+  const hasNoEmergencyContacts = !tenantData?.emergencyContact || tenantData.emergencyContact.length === 0
 
   // Determine what needs to be completed
   const needsEmiratesIdUpdate = isEmiratesIdMissing || isEmiratesIdExpired

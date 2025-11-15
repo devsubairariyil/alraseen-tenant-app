@@ -29,6 +29,7 @@ import Image from "next/image"
 import ProfileCompletionModal from "@/components/dashboard/profile-completion-modal"
 import { apiClient } from "@/lib/api"
 import type { TenantDetailsResponse } from "@/lib/types/api-responses"
+import { checkOnboardingRequired } from "@/lib/check-onboarding"
 
 const sidebarItems = [
   { id: "profile", label: "Profile", icon: User, href: "/dashboard" },
@@ -124,7 +125,12 @@ export default function DashboardLayout({
         try {
           setLoadingTenantData(true)
           const response = await apiClient.getTenantDetails()
-          setTenantData(response.data)
+          const needsOnboarding = checkOnboardingRequired(response.data)
+          if (needsOnboarding) {
+            router.push("/onboarding")
+          } else {
+            setTenantData(response.data)
+          }
         } catch (error) {
           console.error("Error fetching tenant data:", error)
         } finally {

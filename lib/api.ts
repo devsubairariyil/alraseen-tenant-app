@@ -44,6 +44,7 @@ class ApiClient {
     if (typeof window !== "undefined") {
       localStorage.removeItem("accessToken")
       localStorage.removeItem("userData")
+      localStorage.removeItem("onboardingCompleted")
     }
   }
 

@@ -24,6 +24,7 @@ import {
 } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
 import { apiClient } from "@/lib/api"
+import { checkOnboardingRequired } from "@/lib/check-onboarding"
 import Image from "next/image"
 import Link from "next/link"
 import OtpVerification from "./otp-verification"
@@ -72,13 +73,35 @@ export default function LoginForm() {
     setError("")
 
     try {
+      // Clear onboarding completion flag on new login
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("onboardingCompleted")
+      }
+
       const response = await apiClient.login({ email, password })
 
       if (response.data.loginStatus === "OTP_PENDING") {
         setShowOtp(true)
       } else if (response.data.accessToken != undefined) {
         await login(email, password)
-        router.push("/dashboard")
+        
+        // Check if onboarding is required
+        try {
+          const tenantData = await apiClient.getTenantDetails()
+          console.log("Tenant Data Response:", tenantData.data)
+          const needsOnboarding = checkOnboardingRequired(tenantData.data)
+          console.log("Needs Onboarding:", needsOnboarding)
+          
+          if (needsOnboarding) {
+            router.push("/onboarding")
+          } else {
+            router.push("/dashboard")
+          }
+        } catch (error) {
+          console.error("Error checking onboarding status:", error)
+          // Fallback to dashboard if there's an error
+          router.push("/dashboard")
+        }
       }
     } catch (err) {
       setError("Invalid email or password. Please try again.")
@@ -93,11 +116,32 @@ export default function LoginForm() {
     setError("")
 
     try {
+      // Clear onboarding completion flag on new login via OTP
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("onboardingCompleted")
+      }
+
       const response = await apiClient.verifyOtp({ email, otp })
       if (response.data.accessToken) {
-        // Store user data and redirect
+        // Store user data
         localStorage.setItem("userData", JSON.stringify(response.data))
-        router.push("/dashboard")
+        apiClient.setToken(response.data.accessToken)
+        
+        // Check if onboarding is required
+        try {
+          const tenantData = await apiClient.getTenantDetails()
+          const needsOnboarding = checkOnboardingRequired(tenantData.data)
+          
+          if (needsOnboarding) {
+            router.push("/onboarding")
+          } else {
+            router.push("/dashboard")
+          }
+        } catch (error) {
+          console.error("Error checking onboarding status:", error)
+          // Fallback to dashboard if there's an error
+          router.push("/dashboard")
+        }
       }
     } catch (err) {
       setError("Invalid OTP. Please try again.")

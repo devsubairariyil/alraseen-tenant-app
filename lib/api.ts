@@ -371,6 +371,11 @@ class ApiClient {
       throw error
     }
   }
+
+  // Utility method to get file URL from reference ID
+  getFileUrl(referenceId: string): string {
+    return `${this.baseURL}/files/${referenceId}`
+  }
 }
 
 export const apiClient = new ApiClient(API_BASE_URL)

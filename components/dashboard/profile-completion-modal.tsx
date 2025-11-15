@@ -42,9 +42,9 @@ export default function ProfileCompletionModal({ tenantData, onComplete }: Profi
   })
 
   // Check if Emirates ID is missing or expired
-  const isEmiratesIdMissing = !tenantData?.emiratesIdNo || !tenantData?.emiratesIdExpiry
-  const isEmiratesIdExpired = tenantData?.emiratesIdExpiry 
-    ? new Date(tenantData.emiratesIdExpiry) < new Date() 
+  const isEmiratesIdMissing = !tenantData?.tenantItem?.emiratesIdNo || !tenantData?.tenantItem?.emiratesIdExpiry
+  const isEmiratesIdExpired = tenantData?.tenantItem?.emiratesIdExpiry 
+    ? new Date(tenantData.tenantItem.emiratesIdExpiry) < new Date() 
     : false
 
   // Check if emergency contacts are missing
@@ -66,10 +66,10 @@ export default function ProfileCompletionModal({ tenantData, onComplete }: Profi
     }
 
     // Pre-fill existing data if available
-    if (tenantData) {
+    if (tenantData?.tenantItem) {
       setEmiratesForm({
-        emiratesIdNo: tenantData.emiratesIdNo || "",
-        emiratesIdExpiry: tenantData.emiratesIdExpiry ? tenantData.emiratesIdExpiry.split('T')[0] : "",
+        emiratesIdNo: tenantData.tenantItem.emiratesIdNo || "",
+        emiratesIdExpiry: tenantData.tenantItem.emiratesIdExpiry ? tenantData.tenantItem.emiratesIdExpiry.split('T')[0] : "",
       })
     }
   }, [tenantData, needsEmiratesIdUpdate, needsEmergencyContact])
@@ -97,7 +97,7 @@ export default function ProfileCompletionModal({ tenantData, onComplete }: Profi
       }
 
       // Upload Emirates ID document if provided
-      let emiratesIdReference = tenantData?.emiratesIdDocument
+      let emiratesIdReference = tenantData?.tenantItem?.emiratesIdDocument
       if (emiratesIdFile) {
         setIsUploadingEmiratesId(true)
         const uploadResponse = await apiClient.uploadFile(emiratesIdFile, "EMIRATES_ID")

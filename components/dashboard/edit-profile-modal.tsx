@@ -30,15 +30,17 @@ export default function EditProfileModal({ isOpen, onClose, tenantData, onUpdate
   const [error, setError] = useState("")
   const [success, setSuccess] = useState("")
 
+  const tenant = tenantData.tenantItem
+
   // Personal Info Form State
   const [personalForm, setPersonalForm] = useState<UpdateProfileRequest>({
-    firstName: tenantData.firstName,
-    lastName: tenantData.lastName,
-    primaryEmail: tenantData.primaryEmail,
-    primaryMobile: tenantData.primaryMobile,
-    emiratesIdNo: tenantData.emiratesIdNo,
-    emiratesIdExpiry: tenantData.emiratesIdExpiry,
-    nationality: tenantData.nationality,
+    firstName: tenant.firstName,
+    lastName: tenant.lastName,
+    primaryEmail: tenant.primaryEmail,
+    primaryMobile: tenant.primaryMobile,
+    emiratesIdNo: tenant.emiratesIdNo,
+    emiratesIdExpiry: tenant.emiratesIdExpiry,
+    nationality: tenant.nationality,
   })
 
   interface PasswordChangeType{
@@ -173,7 +175,7 @@ export default function EditProfileModal({ isOpen, onClose, tenantData, onUpdate
   const handleDownloadDocument = (url: string) => {
     const link = document.createElement("a")
     link.href = url
-    link.download = `Emirates_ID_${tenantData.firstName}_${tenantData.lastName}`
+    link.download = `Emirates_ID_${tenant.firstName}_${tenant.lastName}`
     link.target = "_blank"
     document.body.appendChild(link)
     link.click()
@@ -208,7 +210,7 @@ export default function EditProfileModal({ isOpen, onClose, tenantData, onUpdate
     }
   }
 
-  const idStatus = getIdStatus(personalForm.emiratesIdExpiry || tenantData.emiratesIdExpiry)
+  const idStatus = getIdStatus(personalForm.emiratesIdExpiry || tenant.emiratesIdExpiry)
   const StatusIcon = idStatus.icon
 
   return (
@@ -363,7 +365,7 @@ export default function EditProfileModal({ isOpen, onClose, tenantData, onUpdate
                   <CardTitle>Emirates ID Document</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {tenantData.emiratesIdDocument && (
+                  {tenant.emiratesIdDocument && (
                     <div className="p-4 bg-gray-50 rounded-lg">
                       <div className="flex items-center justify-between mb-2">
                         <span className="font-medium text-gray-900">Current Emirates ID Document</span>
@@ -371,7 +373,7 @@ export default function EditProfileModal({ isOpen, onClose, tenantData, onUpdate
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => handleViewDocument(tenantData.emiratesIdDocument!)}
+                            onClick={() => handleViewDocument(tenant.emiratesIdDocument!)}
                             className="text-xs px-2 py-1 h-7"
                           >
                             <Eye className="w-3 h-3 mr-1" />
@@ -380,7 +382,7 @@ export default function EditProfileModal({ isOpen, onClose, tenantData, onUpdate
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => handleDownloadDocument(tenantData.emiratesIdDocument!)}
+                            onClick={() => handleDownloadDocument(tenant.emiratesIdDocument!)}
                             className="text-xs px-2 py-1 h-7"
                           >
                             <Download className="w-3 h-3 mr-1" />
@@ -389,7 +391,7 @@ export default function EditProfileModal({ isOpen, onClose, tenantData, onUpdate
                         </div>
                       </div>
                       <p className="text-sm text-gray-600">
-                        Uploaded: {new Date(tenantData.updatedAt).toLocaleDateString()}
+                        Uploaded: {tenant.updatedAt ? new Date(tenant.updatedAt).toLocaleDateString() : 'N/A'}
                       </p>
                     </div>
                   )}

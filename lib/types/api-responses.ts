@@ -56,18 +56,73 @@ export interface HouseholdMember {
   status: string
 }
 
-export interface TenantDetailsResponse {
+export interface TenantItem {
   tenantId: string
   firstName: string
   lastName: string
-  primaryEmail: string
-  primaryMobile: string
+  flatNumber: string
+  propertyName: string
+  propertyId: string
+  memberType: string
+  flatId: string
+  nationality: string
   emiratesIdNo: string
   emiratesIdExpiry: string
-  nationality: string
+  primaryEmail: string
+  primaryMobile: string
   profileImage?: string
-  emergencyContacts: EmergencyContact[]
-  houseHoldMembers: HouseholdMember[]
+  hasParking: boolean
+  leaseStartDate: string
+  leaseEndDate: string
+  leaseStatus: string
+  emiratesIdExpiryStatus: string
+  emiratesIdDocument?: string
+  createdAt?: string
+  updatedAt?: string
+}
+
+export interface ActiveLease {
+  leaseId: string
+  tenantId: string
+  propertyId: string
+  flatId: string
+  flatNumber: string
+  propertyName: string
+  tenantName: string
+  location: string
+  leaseStartDate: string
+  leaseEndDate: string
+  leaseStatus: string
+  numberOfOccupants: number
+  rentAmount: number
+  securityDeposit: number
+  adminFee: number
+  sharingType: string
+  currency: string
+}
+
+export interface ParkingItem {
+  parkingId: string
+  tenantId: string
+  leaseId: string
+  ownerId: string
+  model: string
+  slotNumber: string
+  includedInRent: boolean
+  numberPlate: string
+  parkingFee: number
+  parkingStartDate: string
+  parkingEndDate: string
+  parkingStatus: string
+  currency: string
+}
+
+export interface TenantDetailsResponse {
+  tenantItem: TenantItem
+  activeLease: ActiveLease
+  parkingList: ParkingItem[]
+  emergencyContacts?: EmergencyContact[]
+  houseHoldMembers?: HouseholdMember[]
 }
 
 // Lease Response Types
@@ -203,21 +258,7 @@ export interface FileUploadResponse {
   status: string
   data: string // This is the reference ID for the uploaded image
 }
-// Tenant Details Response Type
-export interface TenantDetailsResponse {
-  tenantId: string
-  firstName: string
-  lastName: string
-  primaryEmail: string
-  primaryMobile: string
-  emiratesIdNo: string
-  emiratesIdExpiry: string
-  nationality: string
-  profileImage?: string
-  emiratesIdDocument?: string
-  createdAt: string
-  updatedAt: string
-}
+
 export interface DocumentItem {
   id: string;
   documentName: string;

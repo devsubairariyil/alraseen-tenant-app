@@ -168,7 +168,7 @@ export default function TenantProfile() {
   const handleDownloadDocument = (url: string) => {
     const link = document.createElement("a")
     link.href = url
-    link.download = `Emirates_ID_${tenantData?.firstName}_${tenantData?.lastName}`
+    link.download = `Emirates_ID_${tenantData?.tenantItem.firstName}_${tenantData?.tenantItem.lastName}`
     link.target = "_blank"
     document.body.appendChild(link)
     link.click()
@@ -230,7 +230,8 @@ export default function TenantProfile() {
     )
   }
 
-  const idStatus = getIdStatus(tenantData.emiratesIdExpiry)
+  const tenant = tenantData.tenantItem
+  const idStatus = getIdStatus(tenant.emiratesIdExpiry)
   const StatusIcon = idStatus.icon
 
   return (
@@ -245,12 +246,12 @@ export default function TenantProfile() {
             <div className="relative flex-shrink-0">
               <Avatar className="w-20 h-20 md:w-24 md:h-24 border-4 border-white/30 shadow-2xl">
                 <AvatarImage
-                  src={tenantData.profileImage || "/placeholder.svg"}
-                  alt={`${tenantData.firstName} ${tenantData.lastName}`}
+                  src={tenant.profileImage || "/placeholder.svg"}
+                  alt={`${tenant.firstName} ${tenant.lastName}`}
                 />
                 <AvatarFallback className="text-xl md:text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 text-white">
-                  {tenantData.firstName.charAt(0)}
-                  {tenantData.lastName.charAt(0)}
+                  {tenant.firstName.charAt(0)}
+                  {tenant.lastName.charAt(0)}
                 </AvatarFallback>
               </Avatar>
               <div className="absolute -bottom-2 -right-2">
@@ -277,7 +278,7 @@ export default function TenantProfile() {
 
             <div className="flex-1 text-center sm:text-left">
               <h1 className="text-2xl md:text-3xl font-bold mb-2">
-                {tenantData.firstName} {tenantData.lastName}
+                {tenant.firstName} {tenant.lastName}
               </h1>
               <p className="text-blue-100 text-base md:text-lg mb-4">Verified Tenant</p>
               <div className="flex flex-wrap justify-center sm:justify-start gap-2 md:gap-4">
@@ -318,7 +319,7 @@ export default function TenantProfile() {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-gray-500 mb-1">Email Address</p>
-                <p className="text-gray-900 font-semibold text-sm md:text-base truncate">{tenantData.primaryEmail}</p>
+                <p className="text-gray-900 font-semibold text-sm md:text-base truncate">{tenant.primaryEmail}</p>
               </div>
             </div>
 
@@ -328,7 +329,7 @@ export default function TenantProfile() {
               </div>
               <div className="flex-1">
                 <p className="text-sm font-medium text-gray-500 mb-1">Mobile Number</p>
-                <p className="text-gray-900 font-semibold text-sm md:text-base">{tenantData.primaryMobile}</p>
+                <p className="text-gray-900 font-semibold text-sm md:text-base">{tenant.primaryMobile}</p>
               </div>
             </div>
 
@@ -338,7 +339,7 @@ export default function TenantProfile() {
               </div>
               <div className="flex-1">
                 <p className="text-sm font-medium text-gray-500 mb-1">Nationality</p>
-                <p className="text-gray-900 font-semibold text-sm md:text-base">{tenantData.nationality}</p>
+                <p className="text-gray-900 font-semibold text-sm md:text-base">{tenant.nationality}</p>
               </div>
             </div>
           </CardContent>
@@ -360,7 +361,7 @@ export default function TenantProfile() {
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-gray-500 mb-1">Emirates ID</p>
                 <p className="text-gray-900 font-semibold font-mono text-xs md:text-sm break-all">
-                  {tenantData.emiratesIdNo}
+                  {tenant.emiratesIdNo}
                 </p>
               </div>
             </div>
@@ -373,7 +374,7 @@ export default function TenantProfile() {
                 <p className="text-sm font-medium text-gray-500 mb-1">ID Expiry Date</p>
                 <div className="flex items-center gap-2">
                   <p className="text-gray-900 font-semibold text-sm md:text-base">
-                    {new Date(tenantData.emiratesIdExpiry).toLocaleDateString()}
+                    {new Date(tenant.emiratesIdExpiry).toLocaleDateString()}
                   </p>
                   <Badge className={idStatus.color}>
                     <StatusIcon className="w-3 h-3 mr-1" />
@@ -384,7 +385,7 @@ export default function TenantProfile() {
             </div>
 
             {/* Emirates ID Document Actions */}
-            {tenantData.emiratesIdDocument && (
+            {tenant.emiratesIdDocument && (
               <div className="border-t pt-4">
                 <div className="flex items-center justify-between mb-2">
                   <p className="text-sm font-medium text-gray-500">Emirates ID Document</p>
@@ -392,7 +393,7 @@ export default function TenantProfile() {
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => handleViewDocument(apiClient.getFileUrl(tenantData.emiratesIdDocument!))}
+                      onClick={() => handleViewDocument(apiClient.getFileUrl(tenant.emiratesIdDocument!))}
                       className="text-xs px-2 py-1 h-7"
                     >
                       <Eye className="w-3 h-3 mr-1" />
@@ -401,7 +402,7 @@ export default function TenantProfile() {
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => handleDownloadDocument(apiClient.getFileUrl(tenantData.emiratesIdDocument!))}
+                      onClick={() => handleDownloadDocument(apiClient.getFileUrl(tenant.emiratesIdDocument!))}
                       className="text-xs px-2 py-1 h-7"
                     >
                       <Download className="w-3 h-3 mr-1" />
@@ -410,7 +411,7 @@ export default function TenantProfile() {
                   </div>
                 </div>
                 <p className="text-xs text-gray-500">
-                  Last updated: {new Date(tenantData.updatedAt).toLocaleDateString()}
+                  Last updated: {tenant.updatedAt ? new Date(tenant.updatedAt).toLocaleDateString() : 'N/A'}
                 </p>
               </div>
             )}

@@ -198,11 +198,11 @@ export default function DashboardLayout({
           </SidebarInset>
         </div>
 
-        {/* Profile Completion Modal */}
-        <ProfileCompletionModal 
+        {/* Profile Completion Modal - Disabled for now */}
+        {/* <ProfileCompletionModal 
           tenantData={tenantData} 
           onComplete={handleProfileComplete}
-        />
+        /> */}
       </Suspense>
     </SidebarProvider>
   )

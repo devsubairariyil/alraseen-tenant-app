@@ -7,7 +7,9 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { CalendarIcon, Users, Loader2 } from "lucide-react"
+import { Card, CardContent } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { CalendarIcon, Users, Loader2, CheckCircle2, UserPlus, ArrowRight } from "lucide-react"
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
 import { apiClient } from "@/lib/api"
@@ -47,6 +49,7 @@ const nationalities = [
 export function HouseholdMembersStep() {
   const { tenantData, markStepComplete, goToNextStep, refreshTenantData } = useOnboarding()
   const [submitting, setSubmitting] = useState(false)
+  const [showForm, setShowForm] = useState(true)
   const [emiratesIdExpiry, setEmiratesIdExpiry] = useState<Date | undefined>()
   const [joiningDate, setJoiningDate] = useState<Date | undefined>(new Date())
   const [formData, setFormData] = useState<Omit<CreateHouseholdMemberRequest, "emiratesIdExpiry" | "joiningDate">>({
@@ -59,8 +62,23 @@ export function HouseholdMembersStep() {
   })
 
   const leaseOccupants = tenantData?.activeLease?.numberOfOccupants || 0
-  const householdSize = (tenantData?.houseHoldMembers?.length || 0) + 1
+  const existingMembers = tenantData?.houseHoldMembers || []
+  const householdSize = existingMembers.length + 1 // +1 for the tenant themselves
   const remainingMembers = leaseOccupants - householdSize
+  const allMembersAdded = householdSize >= leaseOccupants
+
+  const resetForm = () => {
+    setFormData({
+      name: "",
+      email: "",
+      phone: "",
+      relationship: "",
+      emiratesIdNo: "",
+      nationality: "",
+    })
+    setEmiratesIdExpiry(undefined)
+    setJoiningDate(new Date())
+  }
 
   const handleChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
@@ -91,16 +109,23 @@ export function HouseholdMembersStep() {
       
       toast.success("Household member added successfully!")
       
-      // The context will automatically recalculate if more members are needed
-      // For now, we mark as complete and move forward
-      markStepComplete("household-members")
-      goToNextStep()
+      // Reset form for next member
+      resetForm()
+      
+      // Check if we need to add more members
+      // The refreshTenantData will update the context and recalculate remaining members
+      
     } catch (error) {
       console.error("Error adding household member:", error)
       toast.error("Failed to add household member. Please try again.")
     } finally {
       setSubmitting(false)
     }
+  }
+
+  const handleContinue = () => {
+    markStepComplete("household-members")
+    goToNextStep()
   }
 
   return (
@@ -110,12 +135,68 @@ export function HouseholdMembersStep() {
           <Users className="w-8 h-8 text-purple-600" />
         </div>
         <h2 className="text-3xl font-bold text-gray-900 mb-2">Household Members</h2>
-        <p className="text-gray-600">
-          Your lease allows {leaseOccupants} occupants. Please add the remaining {remainingMembers} member(s)
+        <p className="text-gray-600 mb-4">
+          Your lease allows {leaseOccupants} occupants. 
+          {remainingMembers > 0 
+            ? ` Please add ${remainingMembers} more member(s)`
+            : " All members have been added!"
+          }
         </p>
+        
+        {/* Progress Indicator */}
+        <div className="max-w-md mx-auto">
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-sm font-medium text-gray-700">Progress</span>
+            <span className="text-sm font-medium text-purple-600">
+              {householdSize} / {leaseOccupants} occupants
+            </span>
+          </div>
+          <div className="w-full bg-gray-200 rounded-full h-3">
+            <div
+              className="bg-gradient-to-r from-purple-500 to-pink-500 h-3 rounded-full transition-all duration-500"
+              style={{ width: `${(householdSize / leaseOccupants) * 100}%` }}
+            />
+          </div>
+        </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6 bg-white rounded-2xl shadow-xl p-8">
+      {/* Existing Members */}
+      {existingMembers.length > 0 && (
+        <Card className="mb-6 border-0 shadow-xl bg-white rounded-2xl">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <CheckCircle2 className="w-5 h-5 text-green-500" />
+                Added Members ({existingMembers.length})
+              </h3>
+            </div>
+            <div className="space-y-3">
+              {existingMembers.map((member, index) => (
+                <div key={member.memberId || index} className="p-4 bg-gray-50 rounded-xl">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h4 className="font-semibold text-gray-900">{member.name}</h4>
+                        <Badge variant="secondary" className="text-xs">
+                          {member.relationship}
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-gray-600">{member.email}</p>
+                      <p className="text-sm text-gray-600">{member.mobile}</p>
+                      <p className="text-xs text-gray-500 mt-1">Emirates ID: {member.emiratesIdNo}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Form or Continue Button */}
+      {!allMembersAdded ? (
+        showForm ? (
+          <form onSubmit={handleSubmit} className="space-y-6 bg-white rounded-2xl shadow-xl p-8">
         <div className="space-y-2">
           <Label htmlFor="name" className="text-sm font-medium">
             Full Name <span className="text-red-500">*</span>
@@ -275,10 +356,32 @@ export function HouseholdMembersStep() {
               Adding Member...
             </>
           ) : (
-            "Add Household Member"
+            <>
+              <UserPlus className="mr-2 h-4 w-4" />
+              {remainingMembers > 1 ? `Add Member (${remainingMembers} remaining)` : "Add Last Member"}
+            </>
           )}
         </Button>
       </form>
+        ) : null
+      ) : (
+        <div className="space-y-4 bg-white rounded-2xl shadow-xl p-8">
+          <div className="text-center py-6">
+            <CheckCircle2 className="w-16 h-16 text-green-500 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">All Members Added!</h3>
+            <p className="text-gray-600 mb-6">
+              You have successfully added all {leaseOccupants} occupants as per your lease agreement.
+            </p>
+          </div>
+          <Button
+            onClick={handleContinue}
+            className="w-full h-12 text-base font-semibold"
+          >
+            Continue
+            <ArrowRight className="ml-2 h-4 w-4" />
+          </Button>
+        </div>
+      )}
     </div>
   )
 }

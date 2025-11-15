@@ -39,7 +39,6 @@ export interface CreateHouseholdMemberRequest {
   nationality: string
   documentPath?: string
   joiningDate: string
-
 }
 
 export interface UpdateHouseholdMemberRequest {

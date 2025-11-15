@@ -534,34 +534,6 @@ export default function TenantProfile() {
           </CardContent>
         </Card>
 
-        {/* Household Members */}
-        {tenantData.houseHoldMembers && tenantData.houseHoldMembers.length > 0 && (
-          <Card className="border-0 shadow-xl bg-white/80 backdrop-blur-sm rounded-2xl overflow-hidden lg:col-span-2">
-            <CardHeader>
-              <CardTitle className="text-lg md:text-xl font-bold text-gray-900 flex items-center gap-2">
-                <Users className="w-5 h-5 text-green-500" />
-                Household Members
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {tenantData.houseHoldMembers.map((member) => (
-                  <div key={member.memberId} className="p-4 bg-gray-50 rounded-xl">
-                    <div className="flex justify-between items-start mb-2">
-                      <h4 className="font-semibold text-gray-900">{member.name}</h4>
-                      <Badge variant="secondary" className="text-xs">
-                        {member.relationship}
-                      </Badge>
-                    </div>
-                    <p className="text-sm text-gray-600 mb-1">Emirates ID: {member.emiratesIdNo}</p>
-                    <p className="text-sm text-gray-600">Nationality: {member.nationality}</p>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
         {/* Parking Information */}
         {tenantData.parkingList && tenantData.parkingList.length > 0 && (
           <Card className="border-0 shadow-xl bg-white/80 backdrop-blur-sm rounded-2xl overflow-hidden lg:col-span-2">

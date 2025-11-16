@@ -33,6 +33,7 @@ import { apiClient } from "@/lib/api"
 import type { TenantDetailsResponse, EmergencyContact } from "@/lib/types/api-responses"
 import type { EmergencyContactRequest } from "@/lib/types/api-requests"
 import EditProfileModal from "./edit-profile-modal"
+import { toast } from "sonner"
 
 export default function TenantProfile() {
   const [tenantData, setTenantData] = useState<TenantDetailsResponse | null>(null)
@@ -82,6 +83,18 @@ export default function TenantProfile() {
     const file = event.target.files?.[0]
     if (!file) return
 
+    // Validate file type - only JPEG/JPG allowed
+    if (file.type !== 'image/jpeg' && file.type !== 'image/jpg') {
+      toast.error("Please upload a JPEG image file")
+      return
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image size must be less than 5MB")
+      return
+    }
+
     try {
       setIsUploadingImage(true)
 
@@ -98,11 +111,18 @@ export default function TenantProfile() {
 
         // Refresh tenant data
         await fetchTenantData()
+        toast.success("Profile image updated successfully")
+      } else {
+        toast.error("Failed to upload image. Please try again.")
       }
     } catch (err) {
       console.error("Error uploading profile image:", err)
+      const errorMessage = err instanceof Error ? err.message : "Failed to upload profile image"
+      toast.error(errorMessage)
     } finally {
       setIsUploadingImage(false)
+      // Reset the input so the same file can be selected again if needed
+      event.target.value = ''
     }
   }
 
@@ -258,7 +278,7 @@ export default function TenantProfile() {
               <div className="absolute -bottom-2 -right-2">
                 <input
                   type="file"
-                  accept="image/*"
+                  accept="image/jpeg,image/jpg"
                   onChange={handleImageUpload}
                   className="hidden"
                   id="profile-image-upload"

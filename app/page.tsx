@@ -10,6 +10,7 @@ export default function HomePage() {
   const router = useRouter()
 
   useEffect(() => {
+    // Simple redirect - let login form and dashboard handle onboarding logic
     if (!loading && user) {
       router.push("/dashboard")
     }

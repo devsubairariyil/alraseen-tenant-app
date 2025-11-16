@@ -6,8 +6,8 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 // Common currency formatting function
-export function formatCurrency(amount: number, currency = "AED"): string {
-  return `${currency} ${amount.toLocaleString()}`
+export function formatCurrency(amount: number | undefined, currency = "AED"): string {
+  return `${currency} ${amount?.toLocaleString()}`
 }
 
 // Format date consistently

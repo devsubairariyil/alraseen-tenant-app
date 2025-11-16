@@ -114,6 +114,7 @@ export default function MaintenancePage() {
   const [error, setError] = useState("")
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState("")
   const [uploadedImages, setUploadedImages] = useState<string[]>([])
   const [cancellingWorkOrder, setCancellingWorkOrder] = useState<string | null>(null)
 
@@ -151,18 +152,18 @@ export default function MaintenancePage() {
         apiClient.getMyLeases(),
       ])
 
-      setWorkOrders(workOrdersResponse.data || [])
-      setLeases(leasesResponse.data || [])
+      setWorkOrders(workOrdersResponse.data.workOrders || [])
+      setLeases(leasesResponse.data.leases || [])
 
       // Set default property/unit if there's an active lease
-      const activeLeases = leasesResponse.data?.filter((lease) => lease.rentalAgreement.leaseStatus === "ACTIVE") || []
+      const activeLeases = leasesResponse.data.leases?.filter((lease) => lease.rentalAgreement.leaseStatus === "ACTIVE") || []
       setActiveLeases(activeLeases)
 
       if (activeLeases.length > 0) {
         setFormData((prev) => ({
           ...prev,
           propertyId: activeLeases[0].rentalAgreement.propertyId || "",
-          unitId: activeLeases[0].rentalAgreement.unitId || activeLeases[0].rentalAgreement.flatId || "",
+          unitId: activeLeases[0].rentalAgreement.flatId || activeLeases[0].rentalAgreement.flatId || "",
         }))
       }
     } catch (err) {
@@ -178,7 +179,7 @@ export default function MaintenancePage() {
       setLoading(true)
       setError("")
       const response = await apiClient.getWorkOrders()
-      setWorkOrders(response.data || [])
+      setWorkOrders(response.data.workOrders || [])
     } catch (err) {
       setError("Failed to load work orders")
       console.error("Error fetching work orders:", err)
@@ -192,6 +193,7 @@ export default function MaintenancePage() {
     if (!files || files.length === 0) return
 
     try {
+      setSubmitError("") // Clear any previous errors
       const uploadPromises = Array.from(files).map(async (file) => {
         try {
           const response = await apiClient.uploadFile(file, "IMAGE")
@@ -208,8 +210,13 @@ export default function MaintenancePage() {
       if (validImageIds.length > 0) {
         setUploadedImages((prev) => [...(prev || []), ...validImageIds])
       }
+
+      if (validImageIds.length < files.length) {
+        setSubmitError("Some images failed to upload. Please try again.")
+      }
     } catch (err) {
       console.error("Error uploading images:", err)
+      setSubmitError("Failed to upload images. Please try again.")
     }
   }
 
@@ -219,13 +226,25 @@ export default function MaintenancePage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setSubmitError("") // Clear any previous errors
+
     if (!user?.userId) {
-      console.error("User ID not available")
+      setSubmitError("User information not available. Please try logging in again.")
       return
     }
 
     if (!formData.propertyId || !formData.unitId) {
-      console.error("Property ID and Unit ID are required")
+      setSubmitError("Please select a property and unit.")
+      return
+    }
+
+    if (!formData.title?.trim()) {
+      setSubmitError("Please provide a title for your request.")
+      return
+    }
+
+    if (!formData.description?.trim()) {
+      setSubmitError("Please provide a description of the issue.")
       return
     }
 
@@ -233,20 +252,20 @@ export default function MaintenancePage() {
       setIsSubmitting(true)
 
       const workOrderData = {
-        title: formData.title || "Untitled Request",
+        title: formData.title.trim(),
         requestedByUserId: user.userId,
         requesterType: "TENANT" as const,
         propertyId: formData.propertyId,
         unitId: formData.unitId,
         category: formData.category || "GENERAL",
         subcategory: formData.subcategory || "",
-        description: formData.description || "",
+        description: formData.description.trim(),
         workOrderStatus: "PENDING" as const,
         priority: formData.priority || "MEDIUM",
-        requiresLandlordApproval: false, // Always false for tenant requests
+        requiresLandlordApproval: false,
         landlordApprovalStatus: "PENDING" as const,
         beforeImages: uploadedImages || [],
-        remarks: formData.remarks || "",
+        remarks: formData.remarks?.trim() || "",
       }
 
       await apiClient.createWorkOrder(workOrderData)
@@ -263,12 +282,15 @@ export default function MaintenancePage() {
         remarks: "",
       })
       setUploadedImages([])
+      setSubmitError("")
       setIsCreateDialogOpen(false)
 
       // Refresh work orders
       await fetchWorkOrders()
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error creating work order:", err)
+      const errorMessage = err?.message || "Failed to create request. Please try again."
+      setSubmitError(errorMessage)
     } finally {
       setIsSubmitting(false)
     }
@@ -281,8 +303,13 @@ export default function MaintenancePage() {
 
       // Refresh work orders to show updated status
       await fetchWorkOrders()
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error cancelling work order:", err)
+      const errorMessage = err?.message || "Failed to cancel request. Please try again."
+      setError(errorMessage)
+      
+      // Clear error after 5 seconds
+      setTimeout(() => setError(""), 5000)
     } finally {
       setCancellingWorkOrder(null)
     }
@@ -344,7 +371,7 @@ export default function MaintenancePage() {
   }
 
   const calculateSummary = () => {
-    if (!workOrders || workOrders.length === 0) {
+    if (!workOrders || !Array.isArray(workOrders) || workOrders.length === 0) {
       return {
         totalRequests: 0,
         openRequests: 0,
@@ -354,9 +381,9 @@ export default function MaintenancePage() {
 
     const totalRequests = workOrders.length
     const openRequests = workOrders.filter(
-      (wo) => wo && !["COMPLETED", "CANCELLED"].includes(wo.workOrderStatus?.toUpperCase() || ""),
+      (wo) => !["COMPLETED", "CANCELLED"].includes(wo.workOrderStatus?.toUpperCase() || ""),
     ).length
-    const completedRequests = workOrders.filter((wo) => wo && wo.workOrderStatus?.toUpperCase() === "COMPLETED").length
+    const completedRequests = workOrders.filter((wo) => wo.workOrderStatus?.toUpperCase() === "COMPLETED").length
 
     return {
       totalRequests,
@@ -410,6 +437,17 @@ export default function MaintenancePage() {
               <DialogHeader>
                 <DialogTitle>Create Request</DialogTitle>
               </DialogHeader>
+              
+              {submitError && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
+                  <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <h4 className="text-sm font-semibold text-red-800">Error</h4>
+                    <p className="text-sm text-red-700">{submitError}</p>
+                  </div>
+                </div>
+              )}
+              
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                   <Label htmlFor="property">Property</Label>
@@ -427,7 +465,7 @@ export default function MaintenancePage() {
                       {activeLeases.map((lease) => (
                         <SelectItem
                           key={lease.rentalAgreement.leaseId}
-                          value={`${lease.rentalAgreement.propertyId}-${lease.rentalAgreement.unitId || lease.rentalAgreement.flatId}`}
+                          value={`${lease.rentalAgreement.propertyId}-${lease.rentalAgreement.flatId || lease.rentalAgreement.flatId}`}
                         >
                           {lease.rentalAgreement.propertyName} - Unit {lease.rentalAgreement.flatNumber}
                         </SelectItem>
@@ -570,11 +608,29 @@ export default function MaintenancePage() {
                 </div>
 
                 <div className="flex justify-end gap-2 pt-4">
-                  <Button type="button" variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => {
+                      setIsCreateDialogOpen(false)
+                      setSubmitError("")
+                    }}
+                    disabled={isSubmitting}
+                  >
                     Cancel
                   </Button>
                   <Button type="submit" disabled={isSubmitting}>
-                    {isSubmitting ? "Creating..." : "Create Request"}
+                    {isSubmitting ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                        Creating Request...
+                      </>
+                    ) : (
+                      <>
+                        <Plus className="w-4 h-4 mr-2" />
+                        Create Request
+                      </>
+                    )}
                   </Button>
                 </div>
               </form>
@@ -650,7 +706,7 @@ export default function MaintenancePage() {
                 Try Again
               </Button>
             </div>
-          ) : workOrders.length === 0 ? (
+          ) : !Array.isArray(workOrders) || workOrders.length === 0 ? (
             <div className="text-center py-12">
               <Wrench className="w-12 h-12 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-semibold text-gray-900 mb-2">No Requests</h3>
@@ -670,11 +726,11 @@ export default function MaintenancePage() {
                 const hasBeforeImages = workOrder.beforeImages && workOrder.beforeImages.length > 0
                 const hasAfterImages = workOrder.afterImages && workOrder.afterImages.length > 0
                 const isPending = workOrder.workOrderStatus?.toUpperCase() === "PENDING"
-                const isCancelling = cancellingWorkOrder === workOrder.workOrderId
+                const isCancelling = cancellingWorkOrder === workOrder.id
 
                 return (
                   <div
-                    key={workOrder.workOrderId || Math.random()}
+                    key={workOrder.id || Math.random()}
                     className="border border-gray-200 rounded-xl p-4 md:p-6 hover:shadow-lg transition-shadow"
                   >
                     <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4 mb-4">

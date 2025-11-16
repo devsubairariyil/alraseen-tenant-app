@@ -1,10 +1,8 @@
-import type { ApiResponse, DocumentItem, HouseholdMember } from "./types/api-responses"
+import type { ApiResponse, DocumentItem, HouseholdMember, PaginatedLeasesResponse, PaginatedPaymentResponse, PaginatedRefundResponse, PaginatedWorkOrderResponse } from "./types/api-responses"
 import type {
   LoginResponse,
   TenantDetailsResponse,
   LeaseDetailsResponse,
-  PaymentResponse,
-  RefundResponse,
   WorkOrderResponse,
   FileUploadResponse,
 } from "./types/api-responses"
@@ -46,6 +44,7 @@ class ApiClient {
     if (typeof window !== "undefined") {
       localStorage.removeItem("accessToken")
       localStorage.removeItem("userData")
+      localStorage.removeItem("onboardingCompleted")
     }
   }
 
@@ -58,9 +57,9 @@ class ApiClient {
 
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<ApiResponse<T>> {
     const url = `${this.baseURL}${endpoint}`
-    const headers: HeadersInit = {
+    const headers: Record<string, string> = {
       "Content-Type": "application/json",
-      ...options.headers,
+      ...(options.headers as Record<string, string>),
     }
 
     if (this.token) {
@@ -137,11 +136,13 @@ class ApiClient {
   }
 
   async forgotPassword(request: ForgotPasswordRequest) {
-    return this.request<{ message: string }>("/auth/forgot-password", {
+    return this.request<{ message: string }>("/auth/request-password-reset", {
       method: "POST",
       body: JSON.stringify(request),
     })
   }
+
+
 
   async logout() {
     try {
@@ -158,29 +159,107 @@ class ApiClient {
     })
   }
 
+    async validatePasswordResetToken(token: string) {
+    return this.request<{ message: string }>("/auth/validate-reset-token", {
+      method: "POST",
+      body: JSON.stringify({ token }),
+    })
+  }
+
+  async resetPassword(token: string, password: string) {
+    return this.request("/auth/change-password", {
+      method: "POST",
+      body: JSON.stringify({ token: token, newPassword: password }),
+    })
+  }
+
   // Tenant endpoints
   async getTenantDetails() {
     return this.request<TenantDetailsResponse>("/tenants/my-details")
   }
 
   async getMyLeases() {
-    return this.request<LeaseDetailsResponse[]>("/tenants/my-leases")
+    return this.request<PaginatedLeasesResponse>("/tenants/my-leases?page=0&pageSize=100")
   }
 
   async getMyRefunds(leaseId: string) {
-    return this.request<RefundResponse[]>("/tenants/my-refunds?leaseId=" + leaseId)
+    return this.request<PaginatedRefundResponse>("/tenants/my-refunds?page=0&pageSize=100&leaseId=" + leaseId)
+  }
+
+  async downloadRefundReceipt(expenseId: string): Promise<Blob> {
+    const url = `${this.baseURL}/expenses/receipt?expenseId=${expenseId}`
+    const headers: Record<string, string> = {}
+
+    if (this.token) {
+      headers.Authorization = `Bearer ${this.token}`
+    }
+
+    try {
+      const response = await fetch(url, {
+        method: "GET",
+        headers,
+      })
+
+      if (response.status === 401) {
+        this.handleUnauthorized()
+        throw new Error("Unauthorized - Please login again")
+      }
+
+      if (!response.ok) {
+        throw new Error(`Download failed: ${response.status}`)
+      }
+
+      return response.blob()
+    } catch (error) {
+      if (error instanceof Error && error.message.includes("401")) {
+        this.handleUnauthorized()
+      }
+      throw error
+    }
   }
  async getMyDocuments() {
     return this.request<DocumentItem[]>("/documents")
   }
   // Payment endpoints
   async getMyPayments(leaseId: string) {
-    return this.request<PaymentResponse[]>("/tenants/my-payments?leaseId=" + leaseId)
+    return this.request<PaginatedPaymentResponse>("/tenants/my-payments?page=0&pageSize=100&leaseId=" + leaseId)
+  }
+
+  async downloadPaymentReceipt(receiptId: string): Promise<Blob> {
+    const url = `${this.baseURL}/collections/receipt?receiptId=${receiptId}`
+    const headers: Record<string, string> = {}
+
+    if (this.token) {
+      headers.Authorization = `Bearer ${this.token}`
+    }
+
+    try {
+      const response = await fetch(url, {
+        method: "GET",
+        headers,
+      })
+
+      if (response.status === 401) {
+        this.handleUnauthorized()
+        throw new Error("Unauthorized - Please login again")
+      }
+
+      if (!response.ok) {
+        throw new Error(`Download failed: ${response.status}`)
+      }
+
+      return response.blob()
+    } catch (error) {
+      if (error instanceof Error && error.message.includes("401")) {
+        this.handleUnauthorized()
+      }
+      throw error
+    }
   }
 
   // Work Orders endpoints
   async getWorkOrders() {
-    return this.request<WorkOrderResponse[]>("/tenants/my-work-orders")
+    return this.request<PaginatedWorkOrderResponse>("/tenants/my-work-orders?page=0&pageSize=100")
   }
 
    async updateTenantProfile(data: UpdateProfileRequest): Promise<ApiResponse<TenantDetailsResponse>> {
@@ -228,6 +307,10 @@ class ApiClient {
 
 
   // Household Members
+  async getHouseholdMembers(leaseId: string) {
+    return this.request<HouseholdMember[]>(`/tenants/household-members?leaseId=${leaseId}`)
+  }
+
   async createHouseholdMember(request: CreateHouseholdMemberRequest) {
     return this.request<{ memberId: string }>("/tenants/household-members", {
       method: "POST",
@@ -292,6 +375,11 @@ class ApiClient {
       }
       throw error
     }
+  }
+
+  // Utility method to get file URL from reference ID
+  getFileUrl(referenceId: string): string {
+    return `${this.baseURL}/files/${referenceId}`
   }
 }
 

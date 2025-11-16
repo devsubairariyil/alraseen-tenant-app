@@ -27,11 +27,13 @@ import {
   Trash2,
   Eye,
   Download,
+  Car,
 } from "lucide-react"
 import { apiClient } from "@/lib/api"
 import type { TenantDetailsResponse, EmergencyContact } from "@/lib/types/api-responses"
 import type { EmergencyContactRequest } from "@/lib/types/api-requests"
 import EditProfileModal from "./edit-profile-modal"
+import { toast } from "sonner"
 
 export default function TenantProfile() {
   const [tenantData, setTenantData] = useState<TenantDetailsResponse | null>(null)
@@ -81,6 +83,18 @@ export default function TenantProfile() {
     const file = event.target.files?.[0]
     if (!file) return
 
+    // Validate file type - only JPEG/JPG allowed
+    if (file.type !== 'image/jpeg' && file.type !== 'image/jpg') {
+      toast.error("Please upload a JPEG image file")
+      return
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image size must be less than 5MB")
+      return
+    }
+
     try {
       setIsUploadingImage(true)
 
@@ -97,11 +111,18 @@ export default function TenantProfile() {
 
         // Refresh tenant data
         await fetchTenantData()
+        toast.success("Profile image updated successfully")
+      } else {
+        toast.error("Failed to upload image. Please try again.")
       }
     } catch (err) {
       console.error("Error uploading profile image:", err)
+      const errorMessage = err instanceof Error ? err.message : "Failed to upload profile image"
+      toast.error(errorMessage)
     } finally {
       setIsUploadingImage(false)
+      // Reset the input so the same file can be selected again if needed
+      event.target.value = ''
     }
   }
 
@@ -168,7 +189,7 @@ export default function TenantProfile() {
   const handleDownloadDocument = (url: string) => {
     const link = document.createElement("a")
     link.href = url
-    link.download = `Emirates_ID_${tenantData?.firstName}_${tenantData?.lastName}`
+    link.download = `Emirates_ID_${tenantData?.tenantItem.firstName}_${tenantData?.tenantItem.lastName}`
     link.target = "_blank"
     document.body.appendChild(link)
     link.click()
@@ -230,7 +251,8 @@ export default function TenantProfile() {
     )
   }
 
-  const idStatus = getIdStatus(tenantData.emiratesIdExpiry)
+  const tenant = tenantData.tenantItem
+  const idStatus = getIdStatus(tenant.emiratesIdExpiry)
   const StatusIcon = idStatus.icon
 
   return (
@@ -245,18 +267,18 @@ export default function TenantProfile() {
             <div className="relative flex-shrink-0">
               <Avatar className="w-20 h-20 md:w-24 md:h-24 border-4 border-white/30 shadow-2xl">
                 <AvatarImage
-                  src={tenantData.profileImage || "/placeholder.svg"}
-                  alt={`${tenantData.firstName} ${tenantData.lastName}`}
+                  src={tenant.profileImage || "/placeholder.svg"}
+                  alt={`${tenant.firstName} ${tenant.lastName}`}
                 />
                 <AvatarFallback className="text-xl md:text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 text-white">
-                  {tenantData.firstName.charAt(0)}
-                  {tenantData.lastName.charAt(0)}
+                  {tenant.firstName.charAt(0)}
+                  {tenant.lastName.charAt(0)}
                 </AvatarFallback>
               </Avatar>
               <div className="absolute -bottom-2 -right-2">
                 <input
                   type="file"
-                  accept="image/*"
+                  accept="image/jpeg,image/jpg"
                   onChange={handleImageUpload}
                   className="hidden"
                   id="profile-image-upload"
@@ -277,7 +299,7 @@ export default function TenantProfile() {
 
             <div className="flex-1 text-center sm:text-left">
               <h1 className="text-2xl md:text-3xl font-bold mb-2">
-                {tenantData.firstName} {tenantData.lastName}
+                {tenant.firstName} {tenant.lastName}
               </h1>
               <p className="text-blue-100 text-base md:text-lg mb-4">Verified Tenant</p>
               <div className="flex flex-wrap justify-center sm:justify-start gap-2 md:gap-4">
@@ -318,7 +340,7 @@ export default function TenantProfile() {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-gray-500 mb-1">Email Address</p>
-                <p className="text-gray-900 font-semibold text-sm md:text-base truncate">{tenantData.primaryEmail}</p>
+                <p className="text-gray-900 font-semibold text-sm md:text-base truncate">{tenant.primaryEmail}</p>
               </div>
             </div>
 
@@ -328,7 +350,7 @@ export default function TenantProfile() {
               </div>
               <div className="flex-1">
                 <p className="text-sm font-medium text-gray-500 mb-1">Mobile Number</p>
-                <p className="text-gray-900 font-semibold text-sm md:text-base">{tenantData.primaryMobile}</p>
+                <p className="text-gray-900 font-semibold text-sm md:text-base">{tenant.primaryMobile}</p>
               </div>
             </div>
 
@@ -338,7 +360,7 @@ export default function TenantProfile() {
               </div>
               <div className="flex-1">
                 <p className="text-sm font-medium text-gray-500 mb-1">Nationality</p>
-                <p className="text-gray-900 font-semibold text-sm md:text-base">{tenantData.nationality}</p>
+                <p className="text-gray-900 font-semibold text-sm md:text-base">{tenant.nationality}</p>
               </div>
             </div>
           </CardContent>
@@ -360,7 +382,7 @@ export default function TenantProfile() {
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-gray-500 mb-1">Emirates ID</p>
                 <p className="text-gray-900 font-semibold font-mono text-xs md:text-sm break-all">
-                  {tenantData.emiratesIdNo}
+                  {tenant.emiratesIdNo}
                 </p>
               </div>
             </div>
@@ -373,7 +395,7 @@ export default function TenantProfile() {
                 <p className="text-sm font-medium text-gray-500 mb-1">ID Expiry Date</p>
                 <div className="flex items-center gap-2">
                   <p className="text-gray-900 font-semibold text-sm md:text-base">
-                    {new Date(tenantData.emiratesIdExpiry).toLocaleDateString()}
+                    {new Date(tenant.emiratesIdExpiry).toLocaleDateString()}
                   </p>
                   <Badge className={idStatus.color}>
                     <StatusIcon className="w-3 h-3 mr-1" />
@@ -384,7 +406,7 @@ export default function TenantProfile() {
             </div>
 
             {/* Emirates ID Document Actions */}
-            {tenantData.emiratesIdDocument && (
+            {tenant.emiratesIdDocument && (
               <div className="border-t pt-4">
                 <div className="flex items-center justify-between mb-2">
                   <p className="text-sm font-medium text-gray-500">Emirates ID Document</p>
@@ -392,7 +414,7 @@ export default function TenantProfile() {
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => handleViewDocument(apiClient.getFileUrl(tenantData.emiratesIdDocument!))}
+                      onClick={() => handleViewDocument(apiClient.getFileUrl(tenant.emiratesIdDocument!))}
                       className="text-xs px-2 py-1 h-7"
                     >
                       <Eye className="w-3 h-3 mr-1" />
@@ -401,7 +423,7 @@ export default function TenantProfile() {
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => handleDownloadDocument(apiClient.getFileUrl(tenantData.emiratesIdDocument!))}
+                      onClick={() => handleDownloadDocument(apiClient.getFileUrl(tenant.emiratesIdDocument!))}
                       className="text-xs px-2 py-1 h-7"
                     >
                       <Download className="w-3 h-3 mr-1" />
@@ -410,7 +432,7 @@ export default function TenantProfile() {
                   </div>
                 </div>
                 <p className="text-xs text-gray-500">
-                  Last updated: {new Date(tenantData.updatedAt).toLocaleDateString()}
+                  Last updated: {tenant.updatedAt ? new Date(tenant.updatedAt).toLocaleDateString() : 'N/A'}
                 </p>
               </div>
             )}
@@ -492,8 +514,8 @@ export default function TenantProfile() {
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            {tenantData.emergencyContacts && tenantData.emergencyContacts.length > 0 ? (
-              tenantData.emergencyContacts.map((contact) => (
+            {tenantData.emergencyContact && tenantData.emergencyContact.length > 0 ? (
+              tenantData.emergencyContact.map((contact) => (
                 <div key={contact.contactId} className="p-4 bg-gray-50 rounded-xl">
                   <div className="flex justify-between items-start mb-2">
                     <div className="flex-1">
@@ -532,27 +554,61 @@ export default function TenantProfile() {
           </CardContent>
         </Card>
 
-        {/* Household Members */}
-        {tenantData.houseHoldMembers && tenantData.houseHoldMembers.length > 0 && (
+        {/* Parking Information */}
+        {tenantData.parkingList && tenantData.parkingList.length > 0 && (
           <Card className="border-0 shadow-xl bg-white/80 backdrop-blur-sm rounded-2xl overflow-hidden lg:col-span-2">
             <CardHeader>
               <CardTitle className="text-lg md:text-xl font-bold text-gray-900 flex items-center gap-2">
-                <Users className="w-5 h-5 text-green-500" />
-                Household Members
+                <Car className="w-5 h-5 text-blue-500" />
+                Parking Information
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {tenantData.houseHoldMembers.map((member) => (
-                  <div key={member.memberId} className="p-4 bg-gray-50 rounded-xl">
-                    <div className="flex justify-between items-start mb-2">
-                      <h4 className="font-semibold text-gray-900">{member.name}</h4>
-                      <Badge variant="secondary" className="text-xs">
-                        {member.relationship}
+                {tenantData.parkingList.map((parking) => (
+                  <div key={parking.parkingId} className="p-4 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl border border-blue-100">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center">
+                          <Car className="w-5 h-5 text-white" />
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-gray-900">{parking.model}</h4>
+                          <p className="text-xs text-gray-600">Slot: {parking.slotNumber}</p>
+                        </div>
+                      </div>
+                      <Badge 
+                        className={`${
+                          parking.parkingStatus === 'ACTIVE' 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-gray-100 text-gray-800'
+                        }`}
+                      >
+                        {parking.parkingStatus}
                       </Badge>
                     </div>
-                    <p className="text-sm text-gray-600 mb-1">Emirates ID: {member.emiratesIdNo}</p>
-                    <p className="text-sm text-gray-600">Nationality: {member.nationality}</p>
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <p className="text-sm text-gray-600">Number Plate:</p>
+                        <p className="text-sm font-semibold text-gray-900 font-mono">{parking.numberPlate}</p>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <p className="text-sm text-gray-600">Parking Fee:</p>
+                        <p className="text-sm font-semibold text-gray-900">
+                          {parking.includedInRent ? (
+                            <Badge variant="secondary" className="text-xs">Included in Rent</Badge>
+                          ) : (
+                            `${parking.currency} ${parking.parkingFee.toLocaleString()}`
+                          )}
+                        </p>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <p className="text-sm text-gray-600">Period:</p>
+                        <p className="text-sm font-medium text-gray-900">
+                          {new Date(parking.parkingStartDate).toLocaleDateString()} - {new Date(parking.parkingEndDate).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 ))}
               </div>

@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/lib/auth-context"
 import { Suspense } from "react"
@@ -26,6 +26,10 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { User, Home, CreditCard, PaperclipIcon , RefreshCw, Wrench, LogOut, Bell, Search, Settings, Users, Layers } from "lucide-react"
 import Image from "next/image"
+import ProfileCompletionModal from "@/components/dashboard/profile-completion-modal"
+import { apiClient } from "@/lib/api"
+import type { TenantDetailsResponse } from "@/lib/types/api-responses"
+import { checkOnboardingRequired } from "@/lib/check-onboarding"
 
 const sidebarItems = [
   { id: "profile", label: "Profile", icon: User, href: "/dashboard" },
@@ -35,6 +39,7 @@ const sidebarItems = [
   { id: "payments", label: "Payments", icon: CreditCard, href: "/dashboard/payments" },
   { id: "refunds", label: "Refunds", icon: RefreshCw, href: "/dashboard/refunds" },
   { id: "requests", label: "Requests", icon: Layers, href: "/dashboard/requests" },
+
 ]
 
 function AppSidebar() {
@@ -105,6 +110,8 @@ export default function DashboardLayout({
 }) {
   const { user, loading } = useAuth()
   const router = useRouter()
+  const [tenantData, setTenantData] = useState<TenantDetailsResponse | null>(null)
+  const [loadingTenantData, setLoadingTenantData] = useState(true)
 
   useEffect(() => {
     if (!loading && !user) {
@@ -112,7 +119,40 @@ export default function DashboardLayout({
     }
   }, [user, loading, router])
 
-  if (loading) {
+  useEffect(() => {
+    const fetchTenantData = async () => {
+      if (user) {
+        try {
+          setLoadingTenantData(true)
+          const response = await apiClient.getTenantDetails()
+          const needsOnboarding = checkOnboardingRequired(response.data)
+          if (needsOnboarding) {
+            router.push("/onboarding")
+          } else {
+            setTenantData(response.data)
+          }
+        } catch (error) {
+          console.error("Error fetching tenant data:", error)
+        } finally {
+          setLoadingTenantData(false)
+        }
+      }
+    }
+
+    fetchTenantData()
+  }, [user])
+
+  const handleProfileComplete = async () => {
+    // Refetch tenant data after profile completion
+    try {
+      const response = await apiClient.getTenantDetails()
+      setTenantData(response.data)
+    } catch (error) {
+      console.error("Error refetching tenant data:", error)
+    }
+  }
+
+  if (loading || loadingTenantData) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
@@ -163,6 +203,12 @@ export default function DashboardLayout({
             <main className="p-4 md:p-8">{children}</main>
           </SidebarInset>
         </div>
+
+        {/* Profile Completion Modal - Disabled for now */}
+        {/* <ProfileCompletionModal 
+          tenantData={tenantData} 
+          onComplete={handleProfileComplete}
+        /> */}
       </Suspense>
     </SidebarProvider>
   )

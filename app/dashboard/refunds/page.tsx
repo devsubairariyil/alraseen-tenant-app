@@ -14,27 +14,16 @@ import {
   AlertCircle,
   ChevronDown,
   ChevronUp,
+  Eye,
 } from "lucide-react"
 import { apiClient } from "@/lib/api"
 import { formatCurrency, formatDate, getDisplayId } from "@/lib/utils"
 import { TenantRefundRequestModal } from "@/components/dashboard/TenantRefundRequestModal"
+import RefundReceiptModal from "@/components/dashboard/refund-receipt-modal"
 import { toast } from "@/hooks/use-toast"
+import { RefundData } from "@/lib/types/api-responses"
 
-interface RefundData {
-  paymentId: string
-  amount: number
-  category: string
-  subcategory: string
-  description: string
-  paymentStatus: string
-  date: string
-  currency: string
-  receiptNumber?: string
-  voucherNumber?: string
-  leaseId: string
-  propertyName: string
-  flatNumber: string
-}
+
 
 interface LeaseInfo {
   leaseId: string
@@ -54,6 +43,8 @@ export default function RefundsPage() {
   const [expandedLeaseIds, setExpandedLeaseIds] = useState<string[]>([])
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedLease, setSelectedLease] = useState<LeaseInfo | null>(null)
+  const [selectedRefund, setSelectedRefund] = useState<RefundData | null>(null)
+  const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false)
 
   useEffect(() => {
     fetchRefundData()
@@ -64,7 +55,7 @@ export default function RefundsPage() {
       setLoading(true)
       setError("")
       const leaseResponse = await apiClient.getMyLeases()
-      const leases = leaseResponse.data.map((l: any) => ({
+      const leases = leaseResponse.data.leases.map((l: any) => ({
         leaseId: l.rentalAgreement.leaseId,
         propertyName: l.rentalAgreement.propertyName,
         flatNumber: l.rentalAgreement.flatNumber,
@@ -78,7 +69,7 @@ export default function RefundsPage() {
       const refundsData: Record<string, RefundData[]> = {}
       for (const lease of leases) {
         const res = await apiClient.getMyRefunds(lease.leaseId)
-        refundsData[lease.leaseId] = res.data || []
+        refundsData[lease.leaseId] = res.data.expenses || []
       }
       setRefundsMap(refundsData)
     } catch (err) {
@@ -131,7 +122,7 @@ export default function RefundsPage() {
     setSelectedLease(null)
   }
 
-  const handleRefundSubmitted = async (values: any) => {
+  const handleRefundSubmitted = async () => {
     setLoading(true)
     
     try{
@@ -144,6 +135,11 @@ export default function RefundsPage() {
     }finally {
         setLoading(false)
       }
+  }
+
+  const handleViewReceipt = (refund: RefundData) => {
+    setSelectedRefund(refund)
+    setIsReceiptModalOpen(true)
   }
 
 
@@ -211,7 +207,7 @@ export default function RefundsPage() {
                     {lease.propertyName} - Unit {lease.flatNumber}
                   </CardTitle>
                   <p className="text-gray-600">
-                    Tenure: {formatDate(lease.startDate)} - {formatDate(lease.endDate)}
+                    Tenure: {lease.startDate ? formatDate(lease.startDate) : 'N/A'} - {lease.endDate ? formatDate(lease.endDate) : 'N/A'}
                   </p>
                 </div>
                 {expandedLeaseIds.includes(lease.leaseId) ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
@@ -259,6 +255,17 @@ export default function RefundsPage() {
                             <span>Requested: {formatDate(refund.date)}</span>
                           </div>
                           <div className="flex gap-2 mt-2 sm:mt-0">
+                            {(refund.paymentStatus.toUpperCase() === "COMPLETED" || refund.paymentStatus.toUpperCase() === "PAID") && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleViewReceipt(refund)}
+                                className="text-blue-600 hover:text-blue-700"
+                              >
+                                <Eye className="w-4 h-4 mr-1" />
+                                View Receipt
+                              </Button>
+                            )}
                             {refund.paymentStatus.toUpperCase() === "PENDING" && (
                               <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700 bg-transparent">
                                 Cancel Request
@@ -286,6 +293,12 @@ export default function RefundsPage() {
           onSubmitted={handleRefundSubmitted}
         />
       )}
+
+      <RefundReceiptModal
+        isOpen={isReceiptModalOpen}
+        onClose={() => setIsReceiptModalOpen(false)}
+        refund={selectedRefund}
+      />
     </div>
   )
 }

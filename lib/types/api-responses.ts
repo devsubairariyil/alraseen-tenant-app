@@ -209,21 +209,53 @@ export interface PaymentData {
 // Refund Response Types
 export interface RefundData {
   paymentId: string
-  amount: number
-  category: string
-  subcategory: string
-  description: string
-  paymentStatus: string
+  payeeId: string
+  bankAccountId: string
+  propertyId: string
+  preparedByUserId: string
+  verifiedByUserId?: string
+  approvedByUserId?: string
+  verifiedAt?: string
+  approvedAt?: string
+  voucherNumber: string
+  payeeType: string
+  payeeName: string
   date: string
+  propertyName: string
+  category: string
+  subcategory?: string
+  description?: string
+  method: string
+  bankAccountName: string
+  chequeNumber?: string
+  chequeIssueDate?: string
+  preparedBy: string
+  verifiedBy?: string
+  approvedBy?: string
+  paymentStatus: string
+  baseAmount: number
+  vatAmount: number
+  totalAmount: number
   currency: string
-  receiptNumber?: string
-  voucherNumber?: string
+  remarks?: string
+  updatedAt: string
 }
+
+export interface RefundStatusSummary {
+  status: string
+  count: number
+  totalAmount: number
+}
+
 export interface PaginatedRefundResponse {
-  expenses: RefundData[];
-  currentPage: number;
-  totalPages: number;
-  totalLeases: number;
+  expenses: RefundData[]
+  statusSummary: RefundStatusSummary[]
+  pagination: {
+    currentPage: number
+    pageSize: number
+    totalItems: number
+    totalPages: number
+  }
 }
 
 // Work Order Response Types

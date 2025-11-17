@@ -406,7 +406,7 @@ export default function TenantProfile() {
             </div>
 
             {/* Emirates ID Document Actions */}
-            {tenant.emiratesIdDocument && (
+            {tenant.documentPath && (
               <div className="border-t pt-4">
                 <div className="flex items-center justify-between mb-2">
                   <p className="text-sm font-medium text-gray-500">Emirates ID Document</p>
@@ -414,7 +414,7 @@ export default function TenantProfile() {
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => handleViewDocument(apiClient.getFileUrl(tenant.emiratesIdDocument!))}
+                      onClick={() => handleViewDocument(tenant.documentPath!)}
                       className="text-xs px-2 py-1 h-7"
                     >
                       <Eye className="w-3 h-3 mr-1" />
@@ -423,7 +423,7 @@ export default function TenantProfile() {
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => handleDownloadDocument(apiClient.getFileUrl(tenant.emiratesIdDocument!))}
+                      onClick={() => handleDownloadDocument(tenant.documentPath!)}
                       className="text-xs px-2 py-1 h-7"
                     >
                       <Download className="w-3 h-3 mr-1" />

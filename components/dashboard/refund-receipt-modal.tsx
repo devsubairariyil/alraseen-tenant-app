@@ -6,22 +6,12 @@ import { Download } from "lucide-react"
 import { formatCurrency, formatDate } from "@/lib/utils"
 import { apiClient } from "@/lib/api"
 import { useState } from "react"
+import { RefundData } from "@/lib/types/api-responses"
 
 interface RefundReceiptModalProps {
   isOpen: boolean
   onClose: () => void
-  refund: {
-    paymentId: string
-    amount: number
-    category: string
-    subcategory: string
-    description: string
-    paymentStatus: string
-    date: string
-    currency: string
-    receiptNumber?: string
-    voucherNumber?: string
-  } | null
+  refund: RefundData | null
 }
 
 export default function RefundReceiptModal({ isOpen, onClose, refund }: RefundReceiptModalProps) {
@@ -86,10 +76,10 @@ export default function RefundReceiptModal({ isOpen, onClose, refund }: RefundRe
             <div className="text-center">
               <p className="text-sm text-gray-500 mb-2">Refund Amount</p>
               <p className="text-4xl font-bold bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">
-                {formatCurrency(refund.amount, refund.currency)}
+                {formatCurrency(refund.totalAmount, refund.currency)}
               </p>
               <p className="text-sm text-gray-600 mt-3 px-4 py-2 bg-green-50 rounded-full inline-block">
-                {refund.category} - {refund.subcategory}
+                {refund.category}{refund.subcategory ? ` - ${refund.subcategory}` : ''}
               </p>
             </div>
           </div>
@@ -112,14 +102,18 @@ export default function RefundReceiptModal({ isOpen, onClose, refund }: RefundRe
                 <p className="text-xs text-gray-500 mb-1">Category</p>
                 <p className="text-sm font-semibold text-gray-900">{refund.category}</p>
               </div>
-              <div>
-                <p className="text-xs text-gray-500 mb-1">Subcategory</p>
-                <p className="text-sm font-semibold text-gray-900">{refund.subcategory}</p>
-              </div>
-              <div className="md:col-span-2">
-                <p className="text-xs text-gray-500 mb-1">Description</p>
-                <p className="text-sm font-semibold text-gray-900">{refund.description || "N/A"}</p>
-              </div>
+              {refund.subcategory && (
+                <div>
+                  <p className="text-xs text-gray-500 mb-1">Subcategory</p>
+                  <p className="text-sm font-semibold text-gray-900">{refund.subcategory}</p>
+                </div>
+              )}
+              {refund.description && (
+                <div className="md:col-span-2">
+                  <p className="text-xs text-gray-500 mb-1">Description</p>
+                  <p className="text-sm font-semibold text-gray-900">{refund.description}</p>
+                </div>
+              )}
             </div>
           </div>
 
@@ -142,18 +136,34 @@ export default function RefundReceiptModal({ isOpen, onClose, refund }: RefundRe
                 <p className="text-xs text-gray-500 mb-1">Date</p>
                 <p className="text-sm font-semibold text-gray-900">{formatDate(refund.date)}</p>
               </div>
-              {refund.receiptNumber && (
-                <div>
-                  <p className="text-xs text-gray-500 mb-1">Receipt Number</p>
-                  <p className="text-sm font-semibold text-gray-900">{refund.receiptNumber}</p>
-                </div>
-              )}
+              <div>
+                <p className="text-xs text-gray-500 mb-1">Method</p>
+                <p className="text-sm font-semibold text-gray-900">{refund.method}</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500 mb-1">Bank Account</p>
+                <p className="text-sm font-semibold text-gray-900">{refund.bankAccountName}</p>
+              </div>
               {refund.voucherNumber && (
                 <div>
                   <p className="text-xs text-gray-500 mb-1">Voucher Number</p>
                   <p className="text-sm font-semibold text-gray-900">{refund.voucherNumber}</p>
                 </div>
               )}
+              {refund.chequeNumber && (
+                <div>
+                  <p className="text-xs text-gray-500 mb-1">Cheque Number</p>
+                  <p className="text-sm font-semibold text-gray-900">{refund.chequeNumber}</p>
+                </div>
+              )}
+              <div>
+                <p className="text-xs text-gray-500 mb-1">Base Amount</p>
+                <p className="text-sm font-semibold text-gray-900">{formatCurrency(refund.baseAmount, refund.currency)}</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500 mb-1">VAT Amount</p>
+                <p className="text-sm font-semibold text-gray-900">{formatCurrency(refund.vatAmount, refund.currency)}</p>
+              </div>
             </div>
           </div>
         </div>

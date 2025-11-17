@@ -198,7 +198,7 @@ export default function RefundsPage() {
       ) : (
         leases.map((lease) => {
           const refunds = refundsMap[lease.leaseId] || []
-          const total = refunds.reduce((sum, r) => sum + r.amount, 0)
+          const total = refunds.reduce((sum, r) => sum + r.totalAmount, 0)
           return (
             <Card key={lease.leaseId} className="border-0 shadow-xl bg-white/80 backdrop-blur-sm rounded-2xl">
               <CardHeader onClick={() => toggleExpand(lease.leaseId)} className="cursor-pointer flex items-center justify-between">
@@ -232,15 +232,15 @@ export default function RefundsPage() {
                             </div>
                             <div className="min-w-0">
                               <h4 className="font-bold text-gray-900 text-sm md:text-base">
-                                {refund.category} - {refund.subcategory}
+                                {refund.category}{refund.subcategory ? ` - ${refund.subcategory}` : ''}
                               </h4>
-                              <p className="text-xs md:text-sm text-gray-600">{refund.description}</p>
-                              <p className="text-xs text-gray-500 mt-1">ID: {getDisplayId(refund)}</p>
+                              {refund.description && <p className="text-xs md:text-sm text-gray-600">{refund.description}</p>}
+                              <p className="text-xs text-gray-500 mt-1">Voucher: {refund.voucherNumber}</p>
                             </div>
                           </div>
                           <div className="text-right">
                             <p className="text-xl md:text-2xl font-bold text-gray-900">
-                              {formatCurrency(refund.amount, refund.currency)}
+                              {formatCurrency(refund.totalAmount, refund.currency)}
                             </p>
                             <div className="flex items-center gap-1 mt-1 justify-end">
                               {getStatusIcon(refund.paymentStatus)}
@@ -252,7 +252,7 @@ export default function RefundsPage() {
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between text-sm">
                           <div className="flex items-center gap-2 text-gray-500">
                             <Calendar className="w-4 h-4" />
-                            <span>Requested: {formatDate(refund.date)}</span>
+                            <span>Date: {formatDate(refund.date)}</span>
                           </div>
                           <div className="flex gap-2 mt-2 sm:mt-0">
                             {(refund.paymentStatus.toUpperCase() === "COMPLETED" || refund.paymentStatus.toUpperCase() === "PAID") && (
